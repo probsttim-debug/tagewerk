@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EEF2EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1311" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tagwerk">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+</head>
+<body>
+<title>Tagwerk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,500;1,600&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Mobile-first App: schmale Spalte, Sticky-Kopf, Tab-Leiste unten, Karten, Bottom-Sheets */
+:root{
+  --bg:#EEF2EF; --surface:#FFFFFF; --surface2:#E3E9E5; --ink:#15201A; --muted:#5A6A61; --line:#D5DDD8;
+  --accent:#24624A; --accent-ink:#FFFFFF; --accent-soft:#D9EADF;
+  --gold:#9A6B12; --gold-soft:#F3E7CC; --gold-ink:#3B2A07;
+  --danger:#B8402F; --warn:#B7791F; --ok:#1F8455;
+  --c-arbeit:#2F66B0; --c-schule:#7350A8; --c-gesundheit:#1F8A68; --c-privat:#C05A30; --c-finanzen:#7D7420; --c-glaube:#9A6B12;
+  --overlay:rgba(10,18,14,.45);
+  --display:"Cormorant Garamond","Iowan Old Style",Georgia,serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1311; --surface:#161D1A; --surface2:#1F2824; --ink:#E5ECE8; --muted:#94A39B; --line:#28322D;
+    --accent:#6CC39A; --accent-ink:#0B1610; --accent-soft:#1A3328;
+    --gold:#E3BC66; --gold-soft:#2C2412; --gold-ink:#F6E7C4;
+    --danger:#EE7C69; --warn:#E8B04F; --ok:#4FC48A;
+    --c-arbeit:#7BA7EA; --c-schule:#B49AE6; --c-gesundheit:#5ACCA6; --c-privat:#EC9370; --c-finanzen:#D2C86A; --c-glaube:#E3BC66;
+    --overlay:rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1311; --surface:#161D1A; --surface2:#1F2824; --ink:#E5ECE8; --muted:#94A39B; --line:#28322D;
+  --accent:#6CC39A; --accent-ink:#0B1610; --accent-soft:#1A3328;
+  --gold:#E3BC66; --gold-soft:#2C2412; --gold-ink:#F6E7C4;
+  --danger:#EE7C69; --warn:#E8B04F; --ok:#4FC48A;
+  --c-arbeit:#7BA7EA; --c-schule:#B49AE6; --c-gesundheit:#5ACCA6; --c-privat:#EC9370; --c-finanzen:#D2C86A; --c-glaube:#E3BC66;
+  --overlay:rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+.big,.stat .v,.timer{font-family:var(--body)!important;font-weight:800!important;letter-spacing:-.02em!important}
+body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num{font-variant-numeric:tabular-nums}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.top .wrap{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-block:14px 10px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:700;font-size:36px;line-height:1;margin:2px 0 0}
+h2{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1;margin:0;text-wrap:balance}
+h3{font-size:15px;font-weight:800;margin:0}
+.topbtns{display:flex;gap:6px;align-items:center}
+.pillbtn{background:none;font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:4px 10px;white-space:nowrap}
+
+main{display:flex;flex-direction:column;gap:14px;padding-block:6px calc(96px + env(safe-area-inset-bottom,0px))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.row{display:flex;align-items:center;gap:10px}
+.spread{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.loading{padding:60px 0;text-align:center;color:var(--muted)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:15px;white-space:nowrap}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.soft{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.danger{color:var(--danger)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:14px;border-radius:10px}
+.btn[data-armed]{background:var(--danger);color:#fff;border-color:transparent}
+.link{background:none;border:0;padding:4px 0;color:var(--accent);font-weight:700;font-size:14px}
+.icon-btn{width:36px;height:36px;border-radius:10px;border:0;background:transparent;color:var(--muted);display:inline-grid;place-items:center;flex:none;padding:0}
+.icon-btn:hover{background:var(--surface2)}
+
+label.field{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700;color:var(--muted);min-width:0}
+input[type=text],input[type=number],input[type=date],input[type=time],input:not([type]),select,textarea{width:100%;min-width:0;height:44px;border:1px solid var(--line);background:var(--bg);border-radius:11px;padding:0 12px;font-size:16px;color:var(--ink)}
+textarea{height:auto;min-height:84px;padding:10px 12px;resize:vertical;line-height:1.45}
+input::placeholder,textarea::placeholder{color:color-mix(in srgb,var(--muted) 70%,transparent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.addrow{display:flex;gap:8px}
+.addrow input{flex:1}
+.addrow .btn{flex:none;padding:0 14px}
+
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs .wrap{display:grid;grid-template-columns:repeat(5,1fr);padding-left:max(4px,env(safe-area-inset-left,0px));padding-right:max(4px,env(safe-area-inset-right,0px))}
+.tabs button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 8px;font-size:11px;font-weight:700;color:var(--muted);position:relative}
+.tabs button[aria-current="page"]{color:var(--accent)}
+.tabs svg{width:24px;height:24px}
+.tabs .badge{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:99px;background:var(--danger);color:#fff;font-size:10px;display:grid;place-items:center;padding:0 4px}
+
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface2);border-radius:12px;padding:3px}
+.seg button{border:0;background:transparent;min-height:38px;border-radius:10px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 11px;font-size:13px;font-weight:700}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:transparent}
+.pill{font-size:11px;font-weight:800;border-radius:99px;padding:3px 8px;background:var(--surface2);color:var(--muted);white-space:nowrap;letter-spacing:.02em}
+.pill.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.pill.accent{background:var(--accent-soft);color:var(--accent)}
+.pill.hoch{background:color-mix(in srgb,var(--danger) 15%,transparent);color:var(--danger)}
+.pill.mittel{background:color-mix(in srgb,var(--warn) 17%,transparent);color:var(--warn)}
+.pill.niedrig{background:var(--surface2);color:var(--muted)}
+.pill.late{background:var(--danger);color:#fff}
+.cat{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--muted)}
+.cat i{width:8px;height:8px;border-radius:50%;background:var(--cc);display:inline-block}
+.cc-Arbeit{--cc:var(--c-arbeit)} .cc-Schule{--cc:var(--c-schule)} .cc-Gesundheit{--cc:var(--c-gesundheit)} .cc-Privat{--cc:var(--c-privat)} .cc-Finanzen{--cc:var(--c-finanzen)} .cc-Glaube{--cc:var(--c-glaube)}
+
+.banner{background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;font-size:14px}
+.banner b{color:var(--accent)}
+
+/* Vers des Tages */
+.verse{background:var(--gold-soft);border:0;color:var(--gold-ink);position:relative;overflow:hidden}
+.verse .eyebrow{color:var(--gold)}
+.verse blockquote{margin:0;font-family:var(--display);font-style:italic;font-weight:600;font-size:23px;line-height:1.28;text-wrap:pretty}
+.verse cite{font-style:normal;font-weight:800;font-size:13px;color:var(--gold);letter-spacing:.03em}
+.verse .impulse{font-size:14px;line-height:1.5;border-top:1px solid color-mix(in srgb,var(--gold) 30%,transparent);padding-top:10px}
+.verse .btn{background:transparent;border-color:color-mix(in srgb,var(--gold) 45%,transparent);color:var(--gold-ink)}
+.verse .btn.on{background:var(--gold);color:var(--gold-soft);border-color:transparent}
+
+/* Level */
+.lvl{display:flex;align-items:center;gap:12px}
+.lvl .badge-n{width:46px;height:46px;border-radius:14px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:800;font-size:20px;flex:none;font-variant-numeric:tabular-nums}
+.meter{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.meter b{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .4s}
+.meter.gold b{background:var(--gold)}
+.meter.over b{background:var(--danger)}
+
+/* Listen */
+.list{display:flex;flex-direction:column}
+.item{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);min-width:0}
+.item:first-child{border-top:0}
+.item .title{font-weight:700;overflow-wrap:anywhere}
+.item .sub{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:2px}
+.item.done .title{text-decoration:line-through;color:var(--muted)}
+.tap{background:none;border:0;padding:0;text-align:left;flex:1;min-width:0;display:block}
+.check{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center;flex:none;color:transparent;padding:0}
+.check.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.check.sq{border-radius:8px}
+.check svg{width:15px;height:15px}
+.group-label{font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:4px 2px -4px}
+.group-label.late{color:var(--danger)}
+.empty{text-align:center;padding:22px 10px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:8px}
+.empty strong{color:var(--ink);font-size:16px}
+
+/* Gewohnheiten */
+.streak{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}
+.streak button{aspect-ratio:1;border-radius:5px;background:var(--surface2);border:0;padding:0;max-width:100%}
+.streak button.on{background:var(--ok)}
+.streak button.today{outline:1.5px solid var(--ink);outline-offset:1px}
+.fire{font-weight:800;color:var(--warn);font-size:13px;white-space:nowrap}
+
+/* Kalender */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.cal .wd{font-size:11px;font-weight:800;color:var(--muted);padding-bottom:2px}
+.cal button{border:0;background:var(--bg);border-radius:10px;min-height:46px;padding:5px 0 4px;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.cal button.out{opacity:.35}
+.cal button.today{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.cal button.sel{background:var(--accent);color:var(--accent-ink)}
+.cal .dots{display:flex;gap:2px;height:5px}
+.cal .dots i{width:5px;height:5px;border-radius:50%;background:var(--cc,var(--accent))}
+.cal button.sel .dots i{background:var(--accent-ink)}
+.time{font-weight:800;font-variant-numeric:tabular-nums;min-width:46px;color:var(--accent)}
+
+/* Ziele */
+.goal{display:flex;flex-direction:column;gap:10px;padding:14px 0;border-top:1px solid var(--line)}
+.goal:first-child{border-top:0;padding-top:0}
+.goal .big{font-family:var(--display);font-weight:700;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:20px;font-weight:700;color:var(--accent);padding:0}
+.ms{display:flex;align-items:center;gap:10px;font-size:14px}
+.ms.done span{text-decoration:line-through;color:var(--muted)}
+
+/* Stimmung */
+.moods{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.moods button{border:1px solid var(--line);background:var(--bg);border-radius:12px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
+.moods button b{font-family:var(--display);font-size:22px;line-height:1;color:var(--ink)}
+.moods button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.moods button[aria-pressed="true"] b{color:var(--accent-ink)}
+
+/* Fokus */
+.timer{font-family:var(--display);font-weight:700;font-size:84px;line-height:1;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.timer-ring{width:240px;max-width:100%;aspect-ratio:1;margin:0 auto;position:relative}
+.timer-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.timer-ring .track{stroke:var(--surface2)}
+.timer-ring .bar{stroke:var(--accent);transition:stroke-dashoffset 1s linear}
+.timer-ring.brk .bar{stroke:var(--gold)}
+.timer-ring .lbl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.timer-ring .timer{font-size:62px}
+
+/* Mehr */
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;min-height:96px}
+.tile strong{font-family:var(--display);font-weight:700;font-size:23px;line-height:1.05}
+.tile .sub{font-size:13px;color:var(--muted);margin-top:auto}
+.stat3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{background:var(--bg);border-radius:12px;padding:10px 12px;min-width:0}
+.stat .v{font-family:var(--display);font-weight:700;font-size:28px;line-height:1.05;font-variant-numeric:tabular-nums}
+.stat .l{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.chart{width:100%;height:auto;display:block}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart text{fill:var(--muted);font-size:10px;font-family:var(--body);font-weight:700}
+.chart .barr{fill:var(--accent)}
+.chart .barr.now{fill:var(--gold)}
+.chart .ln{fill:none;stroke:var(--gold);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.chart .pt{fill:var(--surface);stroke:var(--gold);stroke-width:2}
+.badges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.bdg{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;opacity:.55}
+.bdg.on{border-style:solid;border-color:color-mix(in srgb,var(--gold) 55%,transparent);background:var(--gold-soft);opacity:1}
+.bdg b{font-size:14px}
+.bdg span{font-size:12px;color:var(--muted)}
+.back{display:inline-flex;align-items:center;gap:4px}
+
+#sheetBg{position:fixed;inset:0;background:var(--overlay);z-index:20}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:560px;margin:0 auto;max-height:90dvh;overflow:auto;background:var(--surface);border-radius:22px 22px 0 0;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain}
+#sheet .grab{width:40px;height:4px;border-radius:9px;background:var(--line);align-self:center;flex:none}
+.sheet-actions{display:flex;gap:10px;justify-content:space-between}
+.sheet-actions .btn.primary{flex:1}
+#toast{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:30;max-width:520px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:12px 14px;font-size:14px;font-weight:700}
+body.signed-out .tabs,body.signed-out #sync{display:none!important}
+.auth{display:flex;flex-direction:column;gap:16px;padding-block:18px 40px}
+.auth-logo{width:64px;height:64px;border-radius:18px;background:var(--accent);display:grid;place-items:center;color:var(--accent-ink)}
+.auth-logo svg{width:38px;height:38px}
+.auth form{display:flex;flex-direction:column;gap:12px}
+input[type=email],input[type=password]{width:100%;min-width:0;height:44px;border:1px solid var(--line);background:var(--bg);border-radius:11px;padding:0 12px;font-size:16px;color:var(--ink)}
+.err{color:var(--danger);font-size:14px;font-weight:700;min-height:1em}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media (max-width:380px){.timer-ring .timer{font-size:52px}.verse blockquote{font-size:21px}}
+</style>
+
+<header class="top"><div class="wrap">
+  <div><div class="eyebrow" id="topDate"></div><h1 id="topTitle">Heute</h1></div>
+  <div class="topbtns"><button class="pillbtn" id="sync" data-act="account" hidden></button><button class="icon-btn" id="themeBtn" data-act="theme" aria-label="Farbschema wechseln"></button></div>
+</div></header>
+<main id="view" class="wrap"><div class="loading">Lädt …</div></main>
+<nav class="tabs" aria-label="Bereiche"><div class="wrap">
+  <button data-act="tab" data-tab="heute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>Heute</button>
+  <button data-act="tab" data-tab="planer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9.5h17M8 2.8v3.4M16 2.8v3.4M8 14l2.5 2.5L16 12"/></svg>Planer<span class="badge" id="lateBadge" hidden></span></button>
+  <button data-act="tab" data-tab="ziele"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>Ziele</button>
+  <button data-act="tab" data-tab="glaube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5c2.5-1 5.5-1 8 .8 2.5-1.8 5.5-1.8 8-.8v13c-2.5-1-5.5-1-8 .8-2.5-1.8-5.5-1.8-8-.8z"/><path d="M12 6.3v13.5"/></svg>Glaube</button>
+  <button data-act="tab" data-tab="mehr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Mehr</button>
+</div></nav>
+<div id="sheetBg" hidden data-act="closeSheet"></div>
+<section id="sheet" hidden role="dialog" aria-modal="true"></section>
+<div id="toast" hidden role="status"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const view = $('#view');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
+const clone = o => JSON.parse(JSON.stringify(o ?? null));
+const pad = n => String(n).padStart(2, '0');
+const dkey = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const pkey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const todayKey = () => dkey(new Date());
+const shiftKey = (k, n) => { const d = pkey(k); d.setDate(d.getDate() + n); return dkey(d); };
+const monthKey = k => k.slice(0, 7);
+const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0; };
+const fmt = (n, dig = 0) => (Math.round(n * 10 ** dig) / 10 ** dig).toLocaleString('de-DE');
+const eur = n => n.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+const fmtDay = k => {
+  const t = todayKey();
+  if (k === t) return 'Heute';
+  if (k === shiftKey(t, 1)) return 'Morgen';
+  if (k === shiftKey(t, -1)) return 'Gestern';
+  return pkey(k).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+};
+const dayOfYear = d => Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
+const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const ICON_BACK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>';
+const ICON_X = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const CATS = ['Arbeit', 'Schule', 'Gesundheit', 'Privat', 'Finanzen', 'Glaube'];
+const PRIOS = ['hoch', 'mittel', 'niedrig'];
+const RECUR = { '': 'Einmalig', daily: 'Täglich', weekly: 'Wöchentlich', monthly: 'Monatlich' };
+const FINCATS = ['Lebensmittel', 'Freizeit', 'Kleidung', 'Transport', 'Abos', 'Spenden', 'Sonstiges'];
+const MOODS = [['1', 'mies'], ['2', 'naja'], ['3', 'okay'], ['4', 'gut'], ['5', 'super']];
+const catTag = c => c ? `<span class="cat cc-${esc(c)}"><i></i>${esc(c)}</span>` : '';
+
+/* ---------- Bibelverse (Lutherbibel 1912, gemeinfrei) ---------- */
+const VERSES = [
+  ['Josua 1,9', 'Siehe, ich habe dir geboten, daß du getrost und freudig seist. Laß dir nicht grauen und entsetze dich nicht; denn der HERR, dein Gott, ist mit dir in allem, was du tun wirst.', 'Geh die schwierigste Aufgabe heute zuerst an. Du gehst sie nicht allein.'],
+  ['Philipper 4,13', 'Ich vermag alles durch den, der mich mächtig macht, Christus.', 'Was dir heute zu groß vorkommt, darfst du in kleinen Schritten angehen.'],
+  ['Jesaja 40,31', 'Aber die auf den HERRN harren, kriegen neue Kraft, daß sie auffahren mit Flügeln wie Adler, daß sie laufen und nicht matt werden, daß sie wandeln und nicht müde werden.', 'Plane heute bewusst eine Pause ein. Neue Kraft kommt auch aus der Stille.'],
+  ['Psalm 23,1', 'Der HERR ist mein Hirte; mir wird nichts mangeln.', 'Schreib heute drei Dinge auf, die du schon hast und für die du dankbar bist.'],
+  ['Sprüche 16,3', 'Befiehl dem HERRN deine Werke, so werden deine Anschläge fortgehen.', 'Bevor du loslegst: Gib deine Pläne für heute kurz im Gebet ab.'],
+  ['Psalm 37,5', 'Befiehl dem HERRN deine Wege und hoffe auf ihn; er wird\'s wohl machen.', 'Was du nicht in der Hand hast, darfst du heute loslassen.'],
+  ['Jeremia 29,11', 'Denn ich weiß wohl, was ich für Gedanken über euch habe, spricht der HERR: Gedanken des Friedens und nicht des Leides, daß ich euch gebe das Ende, des ihr wartet.', 'Deine Zukunft ist in guten Händen. Mach heute den nächsten kleinen Schritt.'],
+  ['Römer 8,28', 'Wir wissen aber, daß denen, die Gott lieben, alle Dinge zum Besten dienen.', 'Auch ein Tag, der anders läuft als geplant, kann für etwas Gutes sein.'],
+  ['Matthäus 11,28', 'Kommet her zu mir alle, die ihr mühselig und beladen seid; ich will euch erquicken.', 'Fühlst du dich überladen? Streich heute bewusst eine Sache von deiner Liste.'],
+  ['Psalm 118,24', 'Dies ist der Tag, den der HERR macht; lasset uns freuen und fröhlich darinnen sein.', 'Such heute nach einem Moment, über den du dich richtig freuen kannst.'],
+  ['Klagelieder 3,22–23', 'Die Güte des HERRN ist\'s, daß wir nicht gar aus sind; seine Barmherzigkeit hat noch kein Ende, sondern sie ist alle Morgen neu, und deine Treue ist groß.', 'Gestern ist vorbei. Heute darfst du neu anfangen.'],
+  ['Kolosser 3,23', 'Alles, was ihr tut, das tut von Herzen als dem HERRN und nicht den Menschen.', 'Mach heute auch die kleinen Aufgaben mit ganzem Herzen.'],
+  ['Galater 6,9', 'Lasset uns aber Gutes tun und nicht müde werden; denn zu seiner Zeit werden wir auch ernten ohne Aufhören.', 'Bleib bei deinen Gewohnheiten dran, auch wenn du die Ernte noch nicht siehst.'],
+  ['2. Timotheus 1,7', 'Denn Gott hat uns nicht gegeben den Geist der Furcht, sondern der Kraft und der Liebe und der Zucht.', 'Disziplin ist ein Geschenk. Nutze sie heute für eine Sache, die dir wichtig ist.'],
+  ['Psalm 46,2', 'Gott ist unsre Zuversicht und Stärke, eine Hilfe in den großen Nöten, die uns getroffen haben.', 'Wenn es heute schwer wird: Atme durch und erinnere dich, wer dich hält.'],
+  ['Jesaja 41,10', 'Fürchte dich nicht, ich bin mit dir; weiche nicht, denn ich bin dein Gott; ich stärke dich, ich helfe dir auch, ich erhalte dich durch die rechte Hand meiner Gerechtigkeit.', 'Die Aufgabe, vor der du Angst hast, ist heute dran. Du schaffst das.'],
+  ['Psalm 119,105', 'Dein Wort ist meines Fußes Leuchte und ein Licht auf meinem Wege.', 'Nimm dir heute fünf Minuten nur für die Bibel, bevor du aufs Handy schaust.'],
+  ['Matthäus 6,34', 'Darum sorget nicht für den andern Morgen; denn der morgende Tag wird für das Seine sorgen. Es ist genug, daß ein jeglicher Tag seine eigene Plage habe.', 'Konzentrier dich nur auf die Aufgaben von heute. Morgen ist morgen dran.'],
+  ['1. Petrus 5,7', 'Alle eure Sorge werfet auf ihn; denn er sorgt für euch.', 'Schreib deine größte Sorge als Gebetsanliegen auf und gib sie ab.'],
+  ['Philipper 4,6', 'Sorget nichts! sondern in allen Dingen lasset eure Bitten im Gebet und Flehen mit Danksagung vor Gott kund werden.', 'Verbinde heute jede Bitte mit einem Dank.'],
+  ['Sprüche 3,5–6', 'Verlaß dich auf den HERRN von ganzem Herzen, und verlaß dich nicht auf deinen Verstand; sondern gedenke an ihn in allen deinen Wegen, so wird er dich recht führen.', 'Plane gut, aber halt deine Pläne mit offenen Händen.'],
+  ['Nehemia 8,10', 'Bekümmert euch nicht; denn die Freude am HERRN ist eure Stärke.', 'Freude ist Kraft. Was tut dir heute gut?'],
+  ['Matthäus 6,33', 'Trachtet am ersten nach dem Reich Gottes und nach seiner Gerechtigkeit, so wird euch solches alles zufallen.', 'Setz heute das Wichtigste an den Anfang deines Tages.'],
+  ['Psalm 121,1–2', 'Ich hebe meine Augen auf zu den Bergen, von welchen mir Hilfe kommt. Meine Hilfe kommt vom HERRN, der Himmel und Erde gemacht hat.', 'Schau heute mal bewusst hoch, weg vom Bildschirm, und atme durch.'],
+  ['1. Thessalonicher 5,16–18', 'Seid allezeit fröhlich, betet ohne Unterlaß, seid dankbar in allen Dingen; denn das ist der Wille Gottes in Christo Jesu an euch.', 'Sag heute zwischendurch einfach mal leise Danke.'],
+  ['2. Korinther 12,9', 'Laß dir an meiner Gnade genügen; denn meine Kraft ist in den Schwachen mächtig.', 'Du musst heute nicht perfekt sein. Gnade reicht.'],
+  ['Psalm 27,1', 'Der HERR ist mein Licht und mein Heil; vor wem sollte ich mich fürchten? Der HERR ist meines Lebens Kraft; vor wem sollte mir grauen?', 'Geh heute mutig in das Gespräch oder die Aufgabe, die du aufschiebst.'],
+  ['Jesaja 43,1', 'Fürchte dich nicht, denn ich habe dich erlöst; ich habe dich bei deinem Namen gerufen; du bist mein!', 'Dein Wert hängt nicht an deiner To-do-Liste.'],
+  ['Römer 12,12', 'Seid fröhlich in Hoffnung, geduldig in Trübsal, haltet an am Gebet.', 'Geduld mit dir selbst ist heute genauso wichtig wie Fleiß.'],
+  ['Psalm 55,23', 'Wirf dein Anliegen auf den HERRN; der wird dich versorgen.', 'Was belastet dich gerade? Bring es heute ins Gebet.'],
+  ['Johannes 14,27', 'Den Frieden lasse ich euch, meinen Frieden gebe ich euch. Nicht gebe ich euch, wie die Welt gibt. Euer Herz erschrecke nicht und fürchte sich nicht.', 'Plane heute zehn Minuten ohne Handy und ohne Lärm ein.'],
+  ['Johannes 16,33', 'In der Welt habt ihr Angst; aber seid getrost, ich habe die Welt überwunden.', 'Angst darf da sein. Aber sie hat heute nicht das letzte Wort.'],
+  ['Philipper 1,6', 'Und bin desselben in guter Zuversicht, daß, der in euch angefangen hat das gute Werk, der wird\'s auch vollführen.', 'Schau auf deine Ziele: Was hast du schon geschafft? Gott vollendet, was er anfängt.'],
+  ['Psalm 32,8', 'Ich will dich unterweisen und dir den Weg zeigen, den du wandeln sollst; ich will dich mit meinen Augen leiten.', 'Unsicher bei einer Entscheidung? Bete darüber, bevor du sie triffst.'],
+  ['Prediger 3,1', 'Ein jegliches hat seine Zeit, und alles Vornehmen unter dem Himmel hat seine Stunde.', 'Nicht alles muss heute passieren. Gib jeder Sache ihre Zeit.'],
+  ['Jakobus 1,5', 'So aber jemand unter euch Weisheit mangelt, der bitte von Gott, der da gibt einfältig jedermann und rückt\'s niemand auf, so wird sie ihm gegeben werden.', 'Bitte heute ganz konkret um Weisheit für eine Sache, die dich beschäftigt.'],
+  ['Psalm 16,11', 'Du tust mir kund den Weg zum Leben: vor dir ist Freude die Fülle und liebliches Wesen zu deiner Rechten ewiglich.', 'Freude findest du heute nicht erst, wenn alles erledigt ist.'],
+  ['Matthäus 7,7', 'Bittet, so wird euch gegeben; suchet, so werdet ihr finden; klopfet an, so wird euch aufgetan.', 'Trau dich heute, um etwas zu bitten, bei Gott und bei Menschen.'],
+  ['Sprüche 4,23', 'Behüte dein Herz mit allem Fleiß; denn daraus geht das Leben.', 'Achte heute darauf, womit du deinen Kopf und dein Herz fütterst.'],
+  ['1. Korinther 16,14', 'Alle eure Dinge lasset in der Liebe geschehen!', 'Tu heute einem Menschen bewusst etwas Gutes.'],
+  ['Psalm 103,2', 'Lobe den HERRN, meine Seele, und vergiß nicht, was er dir Gutes getan hat.', 'Schau in deinen Rückblick und dein Tagebuch: Wofür kannst du danken?'],
+  ['Micha 6,8', 'Es ist dir gesagt, Mensch, was gut ist und was der HERR von dir fordert, nämlich Gottes Wort halten und Liebe üben und demütig sein vor deinem Gott.', 'Halte es heute einfach: ehrlich, liebevoll, demütig.'],
+  ['Psalm 139,14', 'Ich danke dir darüber, daß ich wunderbar gemacht bin; wunderbar sind deine Werke, und das erkennt meine Seele wohl.', 'Sprich heute freundlich mit dir selbst.'],
+  ['Epheser 2,10', 'Denn wir sind sein Werk, geschaffen in Christo Jesu zu guten Werken, zu welchen uns Gott zuvor bereitet hat, daß wir darin wandeln sollen.', 'Deine Gaben haben einen Sinn. Setz eine davon heute ein.'],
+  ['5. Mose 31,6', 'Seid getrost und unverzagt, fürchtet euch nicht; denn der HERR, dein Gott, wird selber mit dir wandeln und wird die Hand nicht abtun noch dich verlassen.', 'Wo du heute auch hingehst: Du bist nicht verlassen.'],
+  ['Psalm 34,9', 'Schmecket und sehet, wie freundlich der HERR ist. Wohl dem, der auf ihn traut!', 'Achte heute auf die kleinen Zeichen von Gottes Freundlichkeit.'],
+];
+const verseIndexFor = k => dayOfYear(pkey(k)) % VERSES.length;
+
+/* ---------- Speicher (wie Eisenlog: eigenes Konto, sonst nur dieses Gerät) ---------- */
+const DEF = {
+  tasks: { items: [] }, events: { items: [] }, goals: { items: [] }, habits: { items: [] },
+  journal: { entries: {} }, faith: { prayers: [], favs: [] }, lists: { shopping: [], ideas: [] },
+  finance: { budget: 400, expenses: [] }, focus: { sessions: [] }, meta: { points: 0, seeded: false },
+};
+const docs = new Map();
+const timers = {}, chains = {}, inflight = {};
+const dirty = new Set();
+let backend = null, ready = false, mode = 'local', pendingRender = false;
+const LS = 'tagwerk.v1';
+const IS_PWA = !!document.querySelector('link[rel=manifest]');
+const FB = IS_PWA && window.TAGWERK_FIREBASE && window.TAGWERK_FIREBASE.apiKey && window.firebase ? window.TAGWERK_FIREBASE : null;
+let authState = FB ? 'unknown' : 'none', fbAuth = null, fbDb = null;
+
+const D = id => docs.get(id) || clone(DEF[id]);
+function persist(id) {
+  if (!backend) return;
+  inflight[id] = (inflight[id] || 0) + 1; dirty.add(id);
+  chains[id] = (chains[id] || Promise.resolve()).then(() => backend.save(id, docs.get(id)))
+    .catch(e => { console.error(e); toast(e && e.code === 'quota_exceeded' ? 'Speicher voll. Lösche alte Einträge.' : 'Speichern fehlgeschlagen. Prüfe deine Verbindung.'); })
+    .finally(() => { if (--inflight[id] === 0 && !timers[id]) dirty.delete(id); });
+}
+function put(id, data) { clearTimeout(timers[id]); timers[id] = null; docs.set(id, data); persist(id); }
+function putLater(id, data, ms = 700) {
+  docs.set(id, data); dirty.add(id); clearTimeout(timers[id]);
+  timers[id] = setTimeout(() => { timers[id] = null; persist(id); }, ms);
+}
+function flushTimers() { for (const id in timers) if (timers[id]) { clearTimeout(timers[id]); timers[id] = null; persist(id); } }
+addEventListener('pagehide', flushTimers);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushTimers(); });
+function edit(id, fn, later) { const d = clone(D(id)); fn(d); later ? putLater(id, d) : put(id, d); if (!later) render(); return d; }
+function points(n) { edit('meta', m => { m.points = Math.max(0, (m.points || 0) + n); }, true); }
+
+async function init() {
+  if (FB) { initFirebase(); return; }
+  let db = null, user = null, uid = null;
+  try {
+    if (!IS_PWA) {
+      for (let i = 0; i < 20 && !(window.claude && claude.use); i++) await new Promise(r => setTimeout(r, 100));
+      if (window.claude && claude.use) {
+        [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
+        if (user) uid = await user.id();
+      }
+    }
+  } catch (e) { console.warn(e); }
+  if (db && uid) connectDb(db.collection('data/users/' + uid)); else connectLocal();
+}
+function connectDb(coll, fireAndForget) {
+  mode = 'db';
+  backend = fireAndForget
+    // Firestore puffert Schreibvorgänge selbst (auch offline) – nicht auf die Server-Bestätigung warten
+    ? { save: async (k, d) => { coll.doc(k).set(d).catch(writeError); } }
+    : { save: (k, d) => coll.doc(k).set(d) };
+  let seeded = false;
+  coll.onSnapshot(snap => {
+    for (const d of snap.docs) if (DEF[d.id] && !dirty.has(d.id)) docs.set(d.id, d.data());
+    if (!snap.metadata.fromCache && !seeded) { seeded = true; if (!D('meta').seeded) seed(); }
+    if (!ready && (!snap.metadata.fromCache || docs.has('meta'))) ready = true;
+    setSync('Konto');
+    requestRender();
+  }, err => { console.warn(err); setSync('Offline'); });
+  setTimeout(() => { if (!ready) { ready = true; if (!D('meta').seeded) seed(); render(); } }, 6000);
+}
+function writeError(e) { console.error(e); toast('Speichern fehlgeschlagen. Bitte melde dich neu an.'); }
+function connectLocal() {
+  mode = 'local';
+  try { const raw = JSON.parse(localStorage.getItem(LS) || '{}'); for (const k in raw) if (DEF[k]) docs.set(k, raw[k]); } catch {}
+  const save = async () => { try { localStorage.setItem(LS, JSON.stringify(Object.fromEntries(docs))); } catch {} };
+  backend = { save };
+  if (!D('meta').seeded) seed();
+  ready = true; setSync(IS_PWA ? 'Backup' : 'Nur dieses Gerät');
+  if (IS_PWA && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  render();
+}
+
+/* ---------- Firebase (nur in der installierten App) ---------- */
+function initFirebase() {
+  firebase.initializeApp(FB);
+  fbAuth = firebase.auth(); fbDb = firebase.firestore();
+  fbDb.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+  fbAuth.onAuthStateChanged(u => {
+    if (u) { authState = 'in'; connectDb(fbDb.collection('users').doc(u.uid).collection('docs'), true); }
+    else { authState = 'out'; ready = true; render(); }
+  });
+}
+const AUTH_MSG = {
+  'auth/invalid-credential': 'E-Mail oder Passwort stimmt nicht.', 'auth/wrong-password': 'E-Mail oder Passwort stimmt nicht.',
+  'auth/invalid-login-credentials': 'E-Mail oder Passwort stimmt nicht.',
+  'auth/user-not-found': 'Zu dieser E-Mail gibt es kein Konto. Erstelle zuerst eins.', 'auth/invalid-email': 'Diese E-Mail-Adresse ist ungültig.',
+  'auth/missing-email': 'Gib deine E-Mail-Adresse ein.',
+  'auth/email-already-in-use': 'Mit dieser E-Mail gibt es schon ein Konto. Melde dich stattdessen an.',
+  'auth/weak-password': 'Das Passwort braucht mindestens 6 Zeichen.', 'auth/missing-password': 'Gib ein Passwort ein.',
+  'auth/network-request-failed': 'Keine Internetverbindung. Zum Anmelden brauchst du einmal Internet.',
+  'auth/too-many-requests': 'Zu viele Versuche. Warte kurz und versuch es dann nochmal.',
+};
+function vAuth() {
+  const reg = ui.authMode === 'register';
+  return `<div class="auth"><div class="auth-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg></div>
+    <div><h2 style="font-size:32px">${reg ? 'Konto erstellen' : 'Willkommen zurück'}</h2><p class="muted" style="margin:6px 0 0">To-dos, Termine, Ziele, Gewohnheiten und dein Vers des Tages – gespeichert in deinem eigenen Konto.</p></div>
+    <div class="seg" role="group"><button data-act="authMode" data-m="login" aria-pressed="${!reg}">Anmelden</button><button data-act="authMode" data-m="register" aria-pressed="${reg}">Registrieren</button></div>
+    <form id="authForm" novalidate>
+      ${reg ? `<label class="field">Dein Name<input id="a-name" type="text" autocomplete="name" value="${esc(ui.authName || '')}" placeholder="z. B. Alex"></label>` : ''}
+      <label class="field">E-Mail<input id="a-email" type="email" autocomplete="email" inputmode="email" value="${esc(ui.authEmail || '')}" placeholder="name@beispiel.de"></label>
+      <label class="field">Passwort<input id="a-pw" type="password" autocomplete="${reg ? 'new-password' : 'current-password'}" placeholder="${reg ? 'Mindestens 6 Zeichen' : ''}"></label>
+      <div class="err" id="a-err" role="alert"></div>
+      <button class="btn primary" id="a-btn" type="submit">${reg ? 'Konto erstellen' : 'Anmelden'}</button>
+      ${reg ? '' : '<button class="link" type="button" data-act="authReset" style="align-self:center">Passwort vergessen?</button>'}
+    </form></div>`;
+}
+async function doAuth() {
+  const email = val('a-email'), pw = $('#a-pw').value, name = val('a-name'), err = $('#a-err'), btn = $('#a-btn');
+  const reg = ui.authMode === 'register', label = btn.textContent;
+  err.textContent = ''; btn.disabled = true; btn.textContent = 'Einen Moment …';
+  try {
+    if (reg) { const c = await fbAuth.createUserWithEmailAndPassword(email, pw); if (name) await c.user.updateProfile({ displayName: name }); }
+    else await fbAuth.signInWithEmailAndPassword(email, pw);
+  } catch (e) {
+    err.textContent = AUTH_MSG[e.code] || 'Das hat nicht geklappt (' + (e.code || e.message) + ').';
+    btn.disabled = false; btn.textContent = label;
+  }
+}
+document.addEventListener('submit', e => { if (e.target.id === 'authForm') { e.preventDefault(); doAuth(); } });
+function accountSheet() {
+  if (!IS_PWA) return;
+  const u = fbAuth && fbAuth.currentUser;
+  let last = null; try { last = localStorage.getItem('tagwerk.lastBackup'); } catch {}
+  openSheet(`<h2>${u ? 'Konto & Daten' : 'Datensicherung'}</h2>
+    ${u ? `<div class="card" style="padding:14px"><div class="eyebrow">Angemeldet als</div><div class="title" style="font-weight:800">${esc(u.displayName || u.email)}</div>${u.displayName ? `<div class="small muted">${esc(u.email)}</div>` : ''}<button class="btn sm" data-act="logout">Abmelden</button></div>` : ''}
+    <p class="small muted" style="margin:0">${u ? 'Deine Daten sind in deinem Konto gespeichert und auf jedem Gerät da, auf dem du dich anmeldest. Zusätzlich kannst du eine Sicherung als Datei erstellen.' : 'Deine Daten liegen nur auf diesem Gerät. Sichere sie ab und zu als Datei, zum Beispiel in iCloud Drive oder Google Drive.'}</p>
+    <div class="stat3"><div class="stat"><div class="v">${D('tasks').items.length}</div><div class="l">Aufgaben</div></div><div class="stat"><div class="v">${Object.keys(D('journal').entries).length}</div><div class="l">Tagebuch</div></div><div class="stat"><div class="v" style="font-size:16px">${last ? esc(fmtDay(last)) : '–'}</div><div class="l">Letzte Sicherung</div></div></div>
+    <button class="btn primary" data-act="exportData">Sicherung erstellen</button>
+    <label class="btn soft" for="importFile" style="cursor:pointer">Sicherung wiederherstellen</label>
+    <input id="importFile" type="file" accept="application/json,.json" hidden>
+    <div class="small muted">Beim Wiederherstellen werden die aktuellen Daten ersetzt.</div>
+    <div class="sheet-actions"><span></span><button class="btn ghost" data-act="closeSheet">Schließen</button></div>`);
+}
+async function exportData() {
+  const name = 'tagwerk-sicherung-' + todayKey() + '.json';
+  const blob = new Blob([JSON.stringify({ app: 'tagwerk', version: 1, exported: new Date().toISOString(), docs: Object.fromEntries(docs) })], { type: 'application/json' });
+  const file = new File([blob], name, { type: 'application/json' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title: 'Tagwerk Sicherung' });
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+    try { localStorage.setItem('tagwerk.lastBackup', todayKey()); } catch {}
+    toast('Sicherung erstellt'); closeSheet();
+  } catch (e) { if (e && e.name !== 'AbortError') toast('Sicherung fehlgeschlagen.'); }
+}
+document.addEventListener('change', e => {
+  if (e.target.id !== 'importFile' || !e.target.files[0]) return;
+  e.target.files[0].text().then(txt => {
+    const data = JSON.parse(txt);
+    if (!data || data.app !== 'tagwerk' || !data.docs) throw new Error('format');
+    for (const id in DEF) if (data.docs[id]) put(id, data.docs[id]);
+    closeSheet(); toast('Sicherung wiederhergestellt'); render();
+  }).catch(() => toast('Diese Datei ist keine Tagwerk-Sicherung.'));
+});
+function setSync(t) { const s = $('#sync'); s.hidden = !t; s.textContent = t || ''; }
+function requestRender() {
+  const a = document.activeElement;
+  if (a && view.contains(a) && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) { pendingRender = true; return; }
+  render();
+}
+document.addEventListener('focusout', () => setTimeout(() => {
+  if (pendingRender && !(document.activeElement && view.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) { pendingRender = false; render(); }
+}, 0));
+
+/* ---------- Beispieldaten ---------- */
+function seed() {
+  const t = todayKey(), ex = true, hd = {}, hd2 = {}, hd3 = {};
+  for (let i = 1; i <= 12; i++) { const k = shiftKey(t, -i); if (i !== 4) hd[k] = true; if (i % 2) hd2[k] = true; if (i < 6) hd3[k] = true; }
+  put('tasks', { items: [
+    { id: rid(), ex, title: 'Bewerbung abschicken', prio: 'hoch', due: t, cat: 'Arbeit', recur: '', done: false, subs: [{ id: rid(), t: 'Lebenslauf aktualisieren', done: true }, { id: rid(), t: 'Anschreiben lesen lassen', done: false }], created: t },
+    { id: rid(), ex, title: 'Bibel lesen: ein Kapitel', prio: 'mittel', due: t, cat: 'Glaube', recur: 'daily', done: false, subs: [], created: t },
+    { id: rid(), ex, title: 'Arzttermin vereinbaren', prio: 'mittel', due: shiftKey(t, -1), cat: 'Gesundheit', recur: '', done: false, subs: [], created: t },
+    { id: rid(), ex, title: 'Wochenplanung machen', prio: 'niedrig', due: shiftKey(t, 2), cat: 'Privat', recur: 'weekly', done: false, subs: [], created: t },
+    { id: rid(), ex, title: 'Zimmer ausmisten', prio: 'niedrig', due: '', cat: 'Privat', recur: '', done: false, subs: [], created: t },
+  ] });
+  put('events', { items: [
+    { id: rid(), ex, date: t, time: '19:00', title: 'Hauskreis', cat: 'Glaube' },
+    { id: rid(), ex, date: shiftKey(t, 2), time: '10:30', title: 'Zahnarzt', cat: 'Gesundheit' },
+    { id: rid(), ex, date: shiftKey(t, 5), time: '', title: 'Geburtstag von Oma', cat: 'Privat' },
+  ] });
+  put('goals', { items: [
+    { id: rid(), ex, title: 'Spanisch lernen', cat: 'Schule', current: 35, target: 100, unit: '%', notes: 'Jeden Tag 15 Minuten mit der App.', milestones: [{ id: rid(), t: 'Grundwortschatz A1', done: true }, { id: rid(), t: 'Erstes Gespräch führen', done: false }] },
+    { id: rid(), ex, title: 'Buch lesen', cat: 'Privat', current: 120, target: 300, unit: 'Seiten', notes: '', milestones: [] },
+    { id: rid(), ex, title: 'Neues Testament durchlesen', cat: 'Glaube', current: 9, target: 27, unit: 'Bücher', notes: '', milestones: [] },
+  ] });
+  put('habits', { items: [
+    { id: rid(), ex, name: 'Bibel lesen', days: hd },
+    { id: rid(), ex, name: 'Sport', days: hd2 },
+    { id: rid(), ex, name: '2 Liter Wasser', days: hd3 },
+  ] });
+  put('journal', { entries: { [shiftKey(t, -1)]: { ex, mood: 4, energy: 3, grateful: ['Gutes Gespräch mit einem Freund', 'Sonne beim Spaziergang', ''], good: 'Habe meine wichtigste Aufgabe schon vormittags geschafft.', next: 'Früher ins Bett gehen.', text: '' } } });
+  put('faith', { prayers: [
+    { id: rid(), ex, text: 'Für die Bewerbung und die richtige Entscheidung', date: shiftKey(t, -3), answered: false },
+    { id: rid(), ex, text: 'Gesundheit für Oma', date: shiftKey(t, -10), answered: true, answeredDate: shiftKey(t, -2) },
+  ], favs: [] });
+  put('lists', { shopping: [{ id: rid(), ex, t: 'Haferflocken', done: false }, { id: rid(), ex, t: 'Bananen', done: false }, { id: rid(), ex, t: 'Brot', done: true }],
+    ideas: [{ id: rid(), ex, t: 'Morgenroutine ausprobieren: Gebet, Wasser, 10 Min. Spaziergang', date: shiftKey(t, -2) }] });
+  put('finance', { budget: 400, expenses: [
+    { id: rid(), ex, date: shiftKey(t, -1), amount: 34.9, cat: 'Lebensmittel', note: 'Wocheneinkauf' },
+    { id: rid(), ex, date: shiftKey(t, -3), amount: 12.99, cat: 'Abos', note: 'Musik' },
+    { id: rid(), ex, date: shiftKey(t, -5), amount: 20, cat: 'Spenden', note: 'Kollekte' },
+  ] });
+  put('focus', { sessions: [{ ex, date: shiftKey(t, -1), minutes: 25 }, { ex, date: shiftKey(t, -1), minutes: 25 }, { ex, date: shiftKey(t, -2), minutes: 25 }] });
+  put('meta', { points: 0, seeded: true });
+}
+function hasExamples() {
+  const has = a => (a || []).some(x => x.ex);
+  return has(D('tasks').items) || has(D('events').items) || has(D('goals').items) || has(D('habits').items)
+    || has(D('faith').prayers) || has(D('lists').shopping) || has(D('lists').ideas) || has(D('finance').expenses) || has(D('focus').sessions)
+    || Object.values(D('journal').entries).some(e => e.ex);
+}
+function clearExamples() {
+  const nx = a => (a || []).filter(x => !x.ex);
+  for (const k of ['tasks', 'events', 'goals', 'habits']) { const d = clone(D(k)); d.items = nx(d.items); put(k, d); }
+  const f = clone(D('faith')); f.prayers = nx(f.prayers); put('faith', f);
+  const l = clone(D('lists')); l.shopping = nx(l.shopping); l.ideas = nx(l.ideas); put('lists', l);
+  const fi = clone(D('finance')); fi.expenses = nx(fi.expenses); put('finance', fi);
+  const fo = clone(D('focus')); fo.sessions = nx(fo.sessions); put('focus', fo);
+  const j = clone(D('journal')); for (const k in j.entries) if (j.entries[k].ex) delete j.entries[k]; put('journal', j);
+  toast('Beispiele entfernt. Jetzt gehört die App ganz dir.');
+  render();
+}
+const banner = () => hasExamples() ? `<div class="banner"><span><b>Beispieldaten</b> zeigen dir, wie alles aussieht.</span><button class="btn sm soft" data-act="clearExamples">Entfernen</button></div>` : '';
+
+/* ---------- Ableitungen ---------- */
+const openTasks = () => D('tasks').items.filter(x => !x.done);
+const lateCount = () => openTasks().filter(x => x.due && x.due < todayKey()).length;
+function streak(h) {
+  let k = todayKey(), n = 0;
+  if (!h.days[k]) k = shiftKey(k, -1);
+  while (h.days[k]) { n++; k = shiftKey(k, -1); }
+  return n;
+}
+function bestStreak(h) {
+  const ks = Object.keys(h.days).filter(k => h.days[k]).sort();
+  let best = 0, cur = 0, prev = null;
+  for (const k of ks) { cur = prev && shiftKey(prev, 1) === k ? cur + 1 : 1; best = Math.max(best, cur); prev = k; }
+  return best;
+}
+function nextDue(due, r) {
+  const base = due || todayKey();
+  if (r === 'daily') return shiftKey(base, 1);
+  if (r === 'weekly') return shiftKey(base, 7);
+  const d = pkey(base); d.setMonth(d.getMonth() + 1); return dkey(d);
+}
+const level = () => { const p = D('meta').points || 0; return { lvl: Math.floor(p / 100) + 1, rest: p % 100, p }; };
+function badges() {
+  const tasksDone = D('tasks').items.filter(x => x.done && !x.ex).length;
+  const hs = D('habits').items.filter(h => !h.ex);
+  const m = monthKey(todayKey()), fin = D('finance'), spent = fin.expenses.filter(e => !e.ex && monthKey(e.date) === m).reduce((a, e) => a + num(e.amount), 0);
+  return [
+    ['Erster Schritt', 'Erste Aufgabe erledigt', tasksDone >= 1],
+    ['Fleißig', '25 Aufgaben erledigt', tasksDone >= 25],
+    ['Treu dabei', '7 Tage Serie bei einer Gewohnheit', hs.some(h => bestStreak(h) >= 7)],
+    ['Fokussiert', '10 Fokus-Einheiten', D('focus').sessions.filter(s => !s.ex).length >= 10],
+    ['Dankbares Herz', '7 Tagebuch-Einträge', Object.values(D('journal').entries).filter(e => !e.ex).length >= 7],
+    ['Im Gebet', '5 Gebetsanliegen notiert', D('faith').prayers.filter(p => !p.ex).length >= 5],
+    ['Ziel erreicht', 'Ein Ziel zu 100 % geschafft', D('goals').items.some(g => !g.ex && num(g.current) >= num(g.target) && num(g.target) > 0)],
+    ['Gut gehaushaltet', 'Monatsbudget eingehalten', spent > 0 && spent <= num(fin.budget)],
+  ];
+}
+
+/* ---------- UI-Zustand ---------- */
+const ui = { tab: 'heute', planSec: 'aufgaben', zielSec: 'ziele', more: '', taskFilter: 'offen', taskCat: '', cal: monthKey(todayKey()), calSel: todayKey(), jDate: todayKey(), verseShift: 0, finMonth: monthKey(todayKey()) };
+const TITLES = { heute: 'Heute', planer: 'Planer', ziele: 'Ziele', glaube: 'Glaube', mehr: 'Mehr' };
+const MORE = { tagebuch: 'Tagebuch', fokus: 'Fokus', listen: 'Listen', finanzen: 'Finanzen', rueckblick: 'Rückblick' };
+try { const t = localStorage.getItem('tagwerk.tab'); if (TITLES[t]) ui.tab = t; } catch {}
+const h = (location.hash || '').slice(1);
+if (TITLES[h]) ui.tab = h; else if (MORE[h]) { ui.tab = 'mehr'; ui.more = h; }
+
+/* ---------- Ansichten ---------- */
+function verseCard(k, full) {
+  const i = (verseIndexFor(k) + ui.verseShift) % VERSES.length, [ref, text, imp] = VERSES[i];
+  const fav = D('faith').favs.includes(i);
+  return `<div class="card verse"><div class="card-head"><div class="eyebrow">${ui.verseShift ? 'Weiterer Vers' : 'Vers des Tages'}</div>
+      <button class="btn sm ${fav ? 'on' : ''}" data-act="favVerse" data-i="${i}" aria-pressed="${fav}">${fav ? 'Gemerkt' : 'Merken'}</button></div>
+    <blockquote>„${esc(text)}“</blockquote><cite>${esc(ref)}</cite>
+    <div class="impulse"><b>Impuls für heute:</b> ${esc(imp)}</div>
+    ${full ? `<div class="row"><button class="btn sm" data-act="nextVerse">Anderer Vers</button>${ui.verseShift ? '<button class="link" data-act="resetVerse">Zurück zum Tagesvers</button>' : ''}</div>` : ''}</div>`;
+}
+function taskRow(x) {
+  const t = todayKey(), late = !x.done && x.due && x.due < t;
+  const subsDone = (x.subs || []).filter(s => s.done).length;
+  return `<div class="item ${x.done ? 'done' : ''}"><button class="check ${x.done ? 'on' : ''}" data-act="toggleTask" data-id="${x.id}" aria-pressed="${x.done}" aria-label="${esc(x.title)} erledigt">${ICON_CHECK}</button>
+    <button class="tap" data-act="taskSheet" data-id="${x.id}"><div class="title">${esc(x.title)}</div>
+      <div class="sub">${x.done ? '' : `<span class="pill ${x.prio}">${esc(x.prio)}</span>`}${x.due ? `<span class="${late ? 'pill late' : ''}">${late ? 'überfällig · ' : ''}${esc(fmtDay(x.due))}</span>` : ''}${catTag(x.cat)}${x.recur ? `<span>↻ ${RECUR[x.recur]}</span>` : ''}${(x.subs || []).length ? `<span>${subsDone}/${x.subs.length} Schritte</span>` : ''}</div></button></div>`;
+}
+function habitToday(hb) {
+  const t = todayKey(), on = !!hb.days[t], s = streak(hb);
+  return `<div class="item"><button class="check sq ${on ? 'on' : ''}" data-act="toggleHabit" data-id="${hb.id}" data-d="${t}" aria-pressed="${on}" aria-label="${esc(hb.name)} heute">${ICON_CHECK}</button>
+    <div class="grow"><div class="title">${esc(hb.name)}</div></div>${s ? `<span class="fire">${s} ${s === 1 ? 'Tag' : 'Tage'} in Folge</span>` : '<span class="small muted">noch keine Serie</span>'}</div>`;
+}
+function goalBar(g) {
+  const pct = num(g.target) ? Math.min(100, num(g.current) / num(g.target) * 100) : 0;
+  return `<div style="display:flex;flex-direction:column;gap:6px"><div class="row spread"><span class="title" style="font-weight:700">${esc(g.title)}</span><span class="small muted num">${fmt(num(g.current), 1)} / ${fmt(num(g.target), 1)} ${esc(g.unit)}</span></div><div class="meter"><b style="width:${pct}%"></b></div></div>`;
+}
+
+function vHeute() {
+  const t = todayKey(), tasks = openTasks().filter(x => x.due && x.due <= t).sort(byTask);
+  const doneToday = D('tasks').items.filter(x => x.done && x.doneDate === t).length;
+  const evs = D('events').items.filter(e => e.date === t).sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
+  const hs = D('habits').items, gs = D('goals').items.slice(0, 3), L = level(), j = D('journal').entries[t] || {};
+  return `${banner()}${verseCard(t)}
+    <div class="card"><div class="lvl"><div class="badge-n">${L.lvl}</div><div class="grow"><div class="row spread"><h3>Level ${L.lvl}</h3><span class="small muted num">${L.rest} / 100 Punkte</span></div>
+      <div class="meter gold" style="margin-top:6px"><b style="width:${L.rest}%"></b></div><div class="small muted" style="margin-top:6px">Heute ${doneToday} ${doneToday === 1 ? 'Aufgabe' : 'Aufgaben'} erledigt</div></div></div></div>
+    <div class="card"><div class="card-head"><h3>Heute dran</h3><span class="pill ${tasks.length ? 'accent' : 'ok'}">${tasks.length} offen</span></div>
+      ${tasks.length ? `<div class="list">${tasks.map(taskRow).join('')}</div>` : `<div class="empty"><strong>Alles erledigt für heute</strong>Gönn dir eine Pause oder plane den nächsten Schritt.</div>`}
+      <form class="addrow" data-form="quickTask"><input id="q-task" type="text" placeholder="Neue Aufgabe für heute" autocomplete="off"><button class="btn primary" type="submit">Hinzufügen</button></form></div>
+    <div class="card"><div class="card-head"><h3>Termine heute</h3><button class="link" data-act="eventSheet" data-date="${t}">+ Termin</button></div>
+      ${evs.length ? `<div class="list">${evs.map(eventRow).join('')}</div>` : '<div class="small muted">Heute stehen keine Termine an.</div>'}</div>
+    <div class="card"><div class="card-head"><h3>Gewohnheiten</h3><button class="link" data-act="tab" data-tab="ziele" data-sec="gewohnheiten">Alle ansehen</button></div>
+      ${hs.length ? `<div class="list">${hs.map(habitToday).join('')}</div>` : '<button class="btn soft" data-act="habitSheet">Erste Gewohnheit anlegen</button>'}</div>
+    <div class="card"><div class="card-head"><h3>Wie geht's dir heute?</h3><button class="link" data-act="openMore" data-m="tagebuch">Tagebuch</button></div>
+      <div class="moods">${MOODS.map(([v, l]) => `<button data-act="mood" data-v="${v}" aria-pressed="${String(j.mood) === v}"><b>${v}</b>${l}</button>`).join('')}</div></div>
+    ${gs.length ? `<div class="card"><div class="card-head"><h3>Fortschritt</h3><button class="link" data-act="tab" data-tab="ziele">Alle Ziele</button></div>${gs.map(goalBar).join('')}</div>` : ''}
+    <div class="card"><div class="card-head"><div><h3>Fokus-Zeit</h3><div class="small muted">${timerText()} · ${T.mode === 'work' ? 'Arbeitsphase' : 'Pause'}</div></div><button class="btn ${T.running ? '' : 'primary'} sm" data-act="openMore" data-m="fokus">${T.running ? 'Läuft …' : 'Starten'}</button></div></div>`;
+}
+const PRANK = { hoch: 0, mittel: 1, niedrig: 2 };
+const byTask = (a, b) => (a.due || '9999').localeCompare(b.due || '9999') || PRANK[a.prio] - PRANK[b.prio];
+function eventRow(e) {
+  return `<div class="item"><span class="time">${esc(e.time || 'ganztags')}</span><button class="tap" data-act="eventSheet" data-id="${e.id}"><div class="title">${esc(e.title)}</div><div class="sub">${catTag(e.cat)}</div></button></div>`;
+}
+
+function vPlaner() {
+  const seg = `<div class="seg" role="tablist">${[['aufgaben', 'Aufgaben'], ['kalender', 'Kalender']].map(([k, l]) => `<button role="tab" data-act="planSec" data-s="${k}" aria-pressed="${ui.planSec === k}">${l}</button>`).join('')}</div>`;
+  return seg + (ui.planSec === 'kalender' ? vKalender() : vAufgaben());
+}
+function vAufgaben() {
+  const t = todayKey(), all = D('tasks').items.filter(x => !ui.taskCat || x.cat === ui.taskCat);
+  const filters = `<div class="chips">${[['offen', 'Offen'], ['erledigt', 'Erledigt']].map(([k, l]) => `<button class="chip" data-act="taskFilter" data-f="${k}" aria-pressed="${ui.taskFilter === k}">${l}</button>`).join('')}
+    <span style="width:6px"></span>${CATS.map(c => `<button class="chip" data-act="taskCat" data-c="${c}" aria-pressed="${ui.taskCat === c}">${c}</button>`).join('')}</div>`;
+  let body;
+  if (ui.taskFilter === 'erledigt') {
+    const done = all.filter(x => x.done).sort((a, b) => (b.doneDate || '').localeCompare(a.doneDate || ''));
+    body = done.length ? `<div class="card"><div class="list">${done.slice(0, 50).map(taskRow).join('')}</div>${done.length ? '<button class="btn ghost sm" data-act="clearDone">Erledigte löschen</button>' : ''}</div>` : `<div class="card"><div class="empty"><strong>Noch nichts erledigt</strong>Hake eine Aufgabe ab, dann erscheint sie hier.</div></div>`;
+  } else {
+    const open = all.filter(x => !x.done).sort(byTask);
+    const groups = [['Überfällig', open.filter(x => x.due && x.due < t), 'late'], ['Heute', open.filter(x => x.due === t)], ['Diese Woche', open.filter(x => x.due > t && x.due <= shiftKey(t, 7))], ['Später', open.filter(x => x.due > shiftKey(t, 7))], ['Ohne Datum', open.filter(x => !x.due)]];
+    body = open.length ? groups.filter(g => g[1].length).map(([l, xs, c]) => `<div class="group-label ${c || ''}">${l} · ${xs.length}</div><div class="card"><div class="list">${xs.map(taskRow).join('')}</div></div>`).join('')
+      : `<div class="card"><div class="empty"><strong>Keine offenen Aufgaben</strong>Leg oben eine neue Aufgabe an.</div></div>`;
+  }
+  return `<div class="card"><form class="addrow" data-form="newTask"><input id="n-task" type="text" placeholder="Was steht an?" autocomplete="off"><button class="btn primary" type="submit">Neu</button></form>
+    <div class="small muted">Tipp: Tippe eine Aufgabe an, um Datum, Priorität, Wiederholung und Unterschritte festzulegen.</div></div>${filters}${body}`;
+}
+function vKalender() {
+  const [y, m] = ui.cal.split('-').map(Number), first = new Date(y, m - 1, 1), start = new Date(first); start.setDate(1 - (first.getDay() + 6) % 7);
+  const evs = D('events').items, tasks = openTasks(), t = todayKey();
+  const cells = [...Array(42)].map((_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return dkey(d); });
+  const weeks = cells.slice(35).every(k => monthKey(k) !== ui.cal) ? cells.slice(0, 35) : cells;
+  const dots = k => { const e = evs.filter(x => x.date === k).slice(0, 3).map(x => `<i class="cc-${esc(x.cat)}" style="background:var(--cc)"></i>`).join(''); const n = tasks.some(x => x.due === k) ? '<i style="background:var(--muted)"></i>' : ''; return e + n; };
+  const title = first.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  const sel = ui.calSel, selEv = evs.filter(e => e.date === sel).sort((a, b) => (a.time || '99').localeCompare(b.time || '99')), selT = D('tasks').items.filter(x => x.due === sel);
+  return `<div class="card"><div class="card-head"><button class="icon-btn" data-act="calNav" data-n="-1" aria-label="Voriger Monat">${ICON_BACK}</button><h2 style="font-size:24px">${esc(title)}</h2><button class="icon-btn" data-act="calNav" data-n="1" aria-label="Nächster Monat" style="transform:scaleX(-1)">${ICON_BACK}</button></div>
+    <div class="cal">${['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(w => `<div class="wd">${w}</div>`).join('')}
+      ${weeks.map(k => `<button data-act="calSel" data-d="${k}" class="${monthKey(k) !== ui.cal ? 'out' : ''} ${k === t ? 'today' : ''} ${k === sel ? 'sel' : ''}">${pkey(k).getDate()}<span class="dots">${dots(k)}</span></button>`).join('')}</div>
+    ${ui.cal !== monthKey(t) ? '<button class="link" data-act="calToday" style="align-self:center">Zu heute springen</button>' : ''}</div>
+    <div class="card"><div class="card-head"><h3>${esc(pkey(sel).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }))}</h3><button class="btn soft sm" data-act="eventSheet" data-date="${sel}">+ Termin</button></div>
+      ${selEv.length ? `<div class="list">${selEv.map(eventRow).join('')}</div>` : '<div class="small muted">Keine Termine an diesem Tag.</div>'}
+      ${selT.length ? `<div class="group-label">Aufgaben</div><div class="list">${selT.map(taskRow).join('')}</div>` : ''}</div>`;
+}
+
+function vZiele() {
+  const seg = `<div class="seg" role="tablist">${[['ziele', 'Ziele & Themen'], ['gewohnheiten', 'Gewohnheiten']].map(([k, l]) => `<button role="tab" data-act="zielSec" data-s="${k}" aria-pressed="${ui.zielSec === k}">${l}</button>`).join('')}</div>`;
+  return seg + (ui.zielSec === 'gewohnheiten' ? vHabits() : vGoals());
+}
+function vGoals() {
+  const gs = D('goals').items;
+  const body = gs.map(g => {
+    const pct = num(g.target) ? Math.min(100, num(g.current) / num(g.target) * 100) : 0, done = pct >= 100;
+    return `<div class="goal"><div class="row spread" style="align-items:flex-start"><div class="grow"><div class="title" style="font-weight:800;font-size:16px">${esc(g.title)}</div><div class="sub" style="margin-top:3px">${catTag(g.cat)}</div></div>
+        <button class="icon-btn" data-act="goalSheet" data-id="${g.id}" aria-label="Ziel bearbeiten"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button></div>
+      <div class="row spread"><div><span class="big">${fmt(num(g.current), 1)}</span> <span class="muted small num">/ ${fmt(num(g.target), 1)} ${esc(g.unit)}</span></div>
+        <div class="stepper"><button data-act="goalStep" data-id="${g.id}" data-n="-1" aria-label="weniger">−</button><button data-act="goalStep" data-id="${g.id}" data-n="1" aria-label="mehr">+</button></div></div>
+      <div class="meter ${done ? 'gold' : ''}"><b style="width:${pct}%"></b></div><div class="small ${done ? '' : 'muted'}" style="${done ? 'color:var(--gold);font-weight:800' : ''}">${done ? 'Geschafft! Gott sei Dank.' : Math.round(pct) + ' % erreicht'}</div>
+      ${(g.milestones || []).length ? `<div style="display:flex;flex-direction:column;gap:6px">${g.milestones.map(s => `<label class="ms ${s.done ? 'done' : ''}"><input type="checkbox" data-chg="ms" data-id="${g.id}" data-s="${s.id}" ${s.done ? 'checked' : ''}><span>${esc(s.t)}</span></label>`).join('')}</div>` : ''}
+      ${g.notes ? `<div class="small muted">${esc(g.notes)}</div>` : ''}</div>`;
+  }).join('');
+  return `<div class="card">${gs.length ? body : '<div class="empty"><strong>Noch keine Ziele</strong>Lege ein Thema an, in dem du wachsen willst: eine Sprache, ein Buch, Sport, Glaube.</div>'}
+    <button class="btn primary" data-act="goalSheet">Neues Ziel</button></div>`;
+}
+function vHabits() {
+  const t = todayKey(), hs = D('habits').items, days = [...Array(14)].map((_, i) => shiftKey(t, i - 13));
+  return `<div class="card">${hs.length ? hs.map(hb => `<div style="display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid var(--line)" class="hb">
+      <div class="row spread"><div class="title" style="font-weight:800">${esc(hb.name)}</div><div class="row" style="gap:6px"><span class="fire">${streak(hb)} in Folge</span><span class="small muted">Rekord ${bestStreak(hb)}</span>
+        <button class="icon-btn" data-act="habitSheet" data-id="${hb.id}" aria-label="Gewohnheit bearbeiten"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button></div></div>
+      <div class="streak">${days.map(k => `<button class="${hb.days[k] ? 'on' : ''} ${k === t ? 'today' : ''}" data-act="toggleHabit" data-id="${hb.id}" data-d="${k}" aria-label="${esc(hb.name)} am ${esc(fmtDay(k))}" aria-pressed="${!!hb.days[k]}"></button>`).join('')}</div></div>`).join('').replace('border-top:1px solid var(--line)', 'border-top:0;padding-top:0')
+    : '<div class="empty"><strong>Noch keine Gewohnheiten</strong>Zum Beispiel: Bibel lesen, Sport, früh schlafen, Wasser trinken.</div>'}
+    <div class="small muted">Die Kästchen zeigen die letzten 14 Tage. Tippe eins an, um einen Tag nachzutragen.</div>
+    <button class="btn primary" data-act="habitSheet">Neue Gewohnheit</button></div>`;
+}
+
+function vGlaube() {
+  const f = D('faith'), open = f.prayers.filter(p => !p.answered), ans = f.prayers.filter(p => p.answered);
+  return `${verseCard(todayKey(), true)}
+    <div class="card"><div class="card-head"><h3>Gebetsanliegen</h3><span class="pill accent">${open.length} offen</span></div>
+      <form class="addrow" data-form="prayer"><input id="n-prayer" type="text" placeholder="Wofür möchtest du beten?" autocomplete="off"><button class="btn primary" type="submit">Notieren</button></form>
+      ${open.length ? `<div class="list">${open.map(p => `<div class="item"><div class="grow"><div class="title">${esc(p.text)}</div><div class="sub">seit ${esc(fmtDay(p.date))}</div></div><button class="btn sm soft" data-act="answer" data-id="${p.id}">Erhört</button><button class="icon-btn" data-act="delPrayer" data-id="${p.id}" aria-label="Löschen">${ICON_X}</button></div>`).join('')}</div>` : '<div class="small muted">Keine offenen Anliegen.</div>'}</div>
+    ${ans.length ? `<div class="card"><h3>Erhörte Gebete</h3><div class="small muted" style="margin-top:-6px">Erinnerungen daran, was Gott schon getan hat.</div><div class="list">${ans.map(p => `<div class="item"><span class="check on" aria-hidden="true">${ICON_CHECK}</span><div class="grow"><div class="title">${esc(p.text)}</div><div class="sub">erhört ${esc(fmtDay(p.answeredDate || p.date))}</div></div><button class="icon-btn" data-act="delPrayer" data-id="${p.id}" aria-label="Löschen">${ICON_X}</button></div>`).join('')}</div></div>` : ''}
+    <div class="card"><h3>Gemerkte Verse</h3>${f.favs.length ? `<div class="list">${f.favs.map(i => VERSES[i] ? `<div class="item"><div class="grow"><div style="font-family:var(--display);font-style:italic;font-size:19px;line-height:1.3">„${esc(VERSES[i][1])}“</div><div class="sub"><b>${esc(VERSES[i][0])}</b></div></div><button class="icon-btn" data-act="favVerse" data-i="${i}" aria-label="Nicht mehr merken">${ICON_X}</button></div>` : '').join('')}</div>` : '<div class="small muted">Tippe beim Vers auf „Merken“, um ihn hier zu sammeln.</div>'}</div>
+    <div class="small muted" style="text-align:center">Bibeltexte: Lutherbibel 1912 (gemeinfrei). Jeden Tag erscheint ein neuer Vers.</div>`;
+}
+
+function vMehr() {
+  if (ui.more && MORE[ui.more]) {
+    const back = `<button class="link back" data-act="openMore" data-m="">${ICON_BACK} Übersicht</button>`;
+    return back + ({ tagebuch: vTagebuch, fokus: vFokus, listen: vListen, finanzen: vFinanzen, rueckblick: vRueckblick })[ui.more]();
+  }
+  const t = todayKey(), j = D('journal').entries, fin = D('finance'), m = monthKey(t);
+  const spent = fin.expenses.filter(e => monthKey(e.date) === m).reduce((a, e) => a + num(e.amount), 0);
+  const fToday = D('focus').sessions.filter(s => s.date === t).length;
+  const shop = D('lists').shopping.filter(x => !x.done).length;
+  const tile = (k, sub) => `<button class="tile" data-act="openMore" data-m="${k}"><span class="eyebrow">${k === 'rueckblick' ? 'Statistik' : 'Bereich'}</span><strong>${MORE[k]}</strong><span class="sub">${sub}</span></button>`;
+  return `<div class="tiles">${tile('tagebuch', j[t] ? 'Heute schon geschrieben' : 'Heute noch kein Eintrag')}${tile('fokus', T.running ? 'Timer läuft: ' + timerText() : fToday + ' Einheiten heute')}
+    ${tile('listen', shop + ' auf der Einkaufsliste')}${tile('finanzen', eur(spent) + ' diesen Monat')}${tile('rueckblick', 'Woche, Level & Abzeichen')}</div>
+    <div class="card"><h3>Darstellung</h3><div class="seg">${[['', 'System'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([k, l]) => `<button data-act="setTheme" data-t="${k}" aria-pressed="${theme === k}">${l}</button>`).join('')}</div>
+      <div class="small muted">${mode === 'db' ? `Deine Daten sind privat in deinem ${FB ? 'Tagwerk' : 'Claude'}-Konto gespeichert. Nur du siehst sie, auch auf anderen Geräten.` : 'Deine Daten sind nur auf diesem Gerät gespeichert.'}</div></div>
+    ${IS_PWA ? `<div class="card"><h3>${FB ? 'Konto & Sicherung' : 'Datensicherung'}</h3><div class="small muted">${FB ? 'Abmelden oder eine Sicherung als Datei erstellen.' : 'Sichere deine Daten ab und zu als Datei.'}</div><button class="btn soft" data-act="account">Öffnen</button></div>` : ''}`;
+}
+function vTagebuch() {
+  const k = ui.jDate, e = D('journal').entries[k] || {}, g = e.grateful || ['', '', ''];
+  const past = Object.entries(D('journal').entries).filter(([d]) => d !== k).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 8);
+  return `<div class="card"><div class="card-head"><button class="icon-btn" data-act="jNav" data-n="-1" aria-label="Vorheriger Tag">${ICON_BACK}</button><h2 style="font-size:24px">${esc(fmtDay(k))}</h2><button class="icon-btn" data-act="jNav" data-n="1" aria-label="Nächster Tag" style="transform:scaleX(-1)" ${k >= todayKey() ? 'disabled' : ''}>${ICON_BACK}</button></div>
+      <div class="field" style="font-size:13px;font-weight:700;color:var(--muted)">Stimmung</div>
+      <div class="moods">${MOODS.map(([v, l]) => `<button data-act="jSet" data-f="mood" data-v="${v}" aria-pressed="${String(e.mood) === v}"><b>${v}</b>${l}</button>`).join('')}</div>
+      <div class="field" style="font-size:13px;font-weight:700;color:var(--muted)">Energie</div>
+      <div class="moods">${[1, 2, 3, 4, 5].map(v => `<button data-act="jSet" data-f="energy" data-v="${v}" aria-pressed="${String(e.energy) === String(v)}"><b>${v}</b>${['leer', 'müde', 'mittel', 'wach', 'voll'][v - 1]}</button>`).join('')}</div>
+      <label class="field">Drei Dinge, für die ich dankbar bin${g.map((x, i) => `<input type="text" id="j-g${i}" data-in="grateful" data-i="${i}" value="${esc(x)}" placeholder="${i + 1}.">`).join('')}</label>
+      <label class="field">Was lief heute gut?<textarea id="j-good" data-in="good" placeholder="Auch kleine Dinge zählen.">${esc(e.good || '')}</textarea></label>
+      <label class="field">Was nehme ich mir für morgen vor?<textarea id="j-next" data-in="next">${esc(e.next || '')}</textarea></label>
+      <label class="field">Gedanken, Gebet, Notizen<textarea id="j-text" data-in="text" style="min-height:120px">${esc(e.text || '')}</textarea></label>
+      <div class="small muted">Wird automatisch gespeichert.</div></div>
+    ${past.length ? `<div class="card"><h3>Frühere Einträge</h3><div class="list">${past.map(([d, x]) => `<div class="item"><button class="tap" data-act="jGo" data-d="${d}"><div class="title">${esc(fmtDay(d))}</div><div class="sub">${x.mood ? `Stimmung ${x.mood}/5` : ''}${x.good ? ' · ' + esc(x.good.slice(0, 60)) : ''}</div></button></div>`).join('')}</div></div>` : ''}`;
+}
+
+/* ---------- Fokus-Timer ---------- */
+const T = { mode: 'work', work: 25, brk: 5, left: 25 * 60, running: false, end: 0, iv: null, taskId: '' };
+const timerText = () => pad(Math.floor(T.left / 60)) + ':' + pad(T.left % 60);
+let actx = null;
+function beep() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    [0, .25, .5].forEach(o => { const os = actx.createOscillator(), g = actx.createGain(); os.frequency.value = 660; g.gain.setValueAtTime(.15, actx.currentTime + o); g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + o + .2); os.connect(g).connect(actx.destination); os.start(actx.currentTime + o); os.stop(actx.currentTime + o + .22); });
+  } catch {}
+}
+function tick() {
+  T.left = Math.max(0, Math.round((T.end - Date.now()) / 1000));
+  const el = $('#timerVal'); if (el) el.textContent = timerText();
+  const bar = $('#timerBar'); if (bar) { const tot = (T.mode === 'work' ? T.work : T.brk) * 60, C = 2 * Math.PI * 100; bar.style.strokeDashoffset = C * (1 - T.left / tot); }
+  if (T.left <= 0) finishPhase();
+}
+function finishPhase() {
+  clearInterval(T.iv); T.running = false; beep();
+  if (T.mode === 'work') {
+    edit('focus', f => { f.sessions.push({ date: todayKey(), minutes: T.work, taskId: T.taskId || '' }); }, true);
+    points(15); toast('Fokus-Einheit geschafft! +15 Punkte. Zeit für eine Pause.');
+    T.mode = 'brk'; T.left = T.brk * 60;
+  } else { T.mode = 'work'; T.left = T.work * 60; toast('Pause vorbei. Weiter geht\'s!'); }
+  render();
+}
+function vFokus() {
+  const t = todayKey(), ss = D('focus').sessions.filter(s => s.date === t), mins = ss.reduce((a, s) => a + num(s.minutes), 0);
+  const tot = (T.mode === 'work' ? T.work : T.brk) * 60, C = 2 * Math.PI * 100;
+  const tasks = openTasks().sort(byTask).slice(0, 30);
+  return `<div class="card"><div class="timer-ring ${T.mode === 'work' ? '' : 'brk'}"><svg viewBox="0 0 220 220"><circle class="track" cx="110" cy="110" r="100" fill="none" stroke-width="12"/><circle id="timerBar" class="bar" cx="110" cy="110" r="100" fill="none" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - T.left / tot)}"/></svg>
+      <div class="lbl"><div class="eyebrow">${T.mode === 'work' ? 'Arbeitsphase' : 'Pause'}</div><div class="timer" id="timerVal">${timerText()}</div></div></div>
+    <div class="row" style="justify-content:center;flex-wrap:wrap;gap:6px"><button class="btn ${T.running ? '' : 'primary'}" data-act="timerToggle" style="min-width:140px">${T.running ? 'Pausieren' : 'Starten'}</button><button class="btn ghost" data-act="timerReset">Zurücksetzen</button>${T.running ? '' : `<button class="btn ghost" data-act="timerSkip">${T.mode === 'work' ? 'Zur Pause' : 'Pause überspringen'}</button>`}</div>
+    <label class="field">Woran arbeitest du?<select id="f-task" data-chg="focusTask"><option value="">Keine bestimmte Aufgabe</option>${tasks.map(x => `<option value="${x.id}" ${T.taskId === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('')}</select></label>
+    <div class="grid2"><label class="field">Arbeit (Min.)<input type="number" id="f-work" min="5" max="120" value="${T.work}" data-chg="focusLen" data-k="work" ${T.running ? 'disabled' : ''}></label><label class="field">Pause (Min.)<input type="number" id="f-brk" min="1" max="60" value="${T.brk}" data-chg="focusLen" data-k="brk" ${T.running ? 'disabled' : ''}></label></div></div>
+    <div class="card"><h3>Heute</h3><div class="stat3"><div class="stat"><div class="v">${ss.length}</div><div class="l">Einheiten</div></div><div class="stat"><div class="v">${mins}</div><div class="l">Minuten</div></div><div class="stat"><div class="v">${ss.length * 15}</div><div class="l">Punkte</div></div></div>
+      <div class="small muted">Der Timer läuft weiter, während du in andere Bereiche der App wechselst. Lass die App dafür geöffnet.</div></div>`;
+}
+
+function vListen() {
+  const l = D('lists');
+  return `<div class="card"><div class="card-head"><h3>Einkaufsliste</h3>${l.shopping.some(x => x.done) ? '<button class="link" data-act="clearShop">Gekaufte entfernen</button>' : ''}</div>
+      <form class="addrow" data-form="shop"><input id="n-shop" type="text" placeholder="z. B. Milch" autocomplete="off"><button class="btn primary" type="submit">Hinzufügen</button></form>
+      ${l.shopping.length ? `<div class="list">${l.shopping.map(x => `<div class="item ${x.done ? 'done' : ''}"><button class="check sq ${x.done ? 'on' : ''}" data-act="toggleShop" data-id="${x.id}" aria-pressed="${x.done}" aria-label="${esc(x.t)} gekauft">${ICON_CHECK}</button><div class="grow title">${esc(x.t)}</div><button class="icon-btn" data-act="delShop" data-id="${x.id}" aria-label="Löschen">${ICON_X}</button></div>`).join('')}</div>` : '<div class="small muted">Die Liste ist leer.</div>'}</div>
+    <div class="card"><h3>Ideen & Notizen</h3>
+      <form data-form="idea" style="display:flex;flex-direction:column;gap:8px"><textarea id="n-idea" placeholder="Schnell festhalten, später sortieren …" style="min-height:70px"></textarea><button class="btn primary" type="submit" style="align-self:flex-end">Speichern</button></form>
+      ${l.ideas.length ? `<div class="list">${l.ideas.slice().reverse().map(x => `<div class="item" style="align-items:flex-start"><div class="grow"><div style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(x.t)}</div><div class="sub">${esc(fmtDay(x.date))}</div></div><button class="btn sm ghost" data-act="ideaToTask" data-id="${x.id}">Als Aufgabe</button><button class="icon-btn" data-act="delIdea" data-id="${x.id}" aria-label="Löschen">${ICON_X}</button></div>`).join('')}</div>` : ''}</div>`;
+}
+
+function vFinanzen() {
+  const fin = D('finance'), m = ui.finMonth, ex = fin.expenses.filter(e => monthKey(e.date) === m).sort((a, b) => b.date.localeCompare(a.date));
+  const spent = ex.reduce((a, e) => a + num(e.amount), 0), bud = num(fin.budget), left = bud - spent, pct = bud ? Math.min(100, spent / bud * 100) : 0;
+  const byCat = FINCATS.map(c => [c, ex.filter(e => e.cat === c).reduce((a, e) => a + num(e.amount), 0)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
+  const [y, mm] = m.split('-').map(Number), title = new Date(y, mm - 1, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  return `<div class="card"><div class="card-head"><button class="icon-btn" data-act="finNav" data-n="-1" aria-label="Voriger Monat">${ICON_BACK}</button><h2 style="font-size:24px">${esc(title)}</h2><button class="icon-btn" data-act="finNav" data-n="1" aria-label="Nächster Monat" style="transform:scaleX(-1)">${ICON_BACK}</button></div>
+      <div class="stat3"><div class="stat"><div class="v" style="font-size:22px">${eur(spent)}</div><div class="l">Ausgegeben</div></div><div class="stat"><div class="v" style="font-size:22px;${left < 0 ? 'color:var(--danger)' : ''}">${eur(left)}</div><div class="l">${left < 0 ? 'Drüber' : 'Übrig'}</div></div><div class="stat"><div class="v" style="font-size:22px">${eur(bud)}</div><div class="l">Budget</div></div></div>
+      <div class="meter ${left < 0 ? 'over' : ''}"><b style="width:${pct}%"></b></div>
+      <label class="field">Monatsbudget (€)<input type="number" id="fin-budget" min="0" step="10" value="${bud}" data-chg="budget"></label></div>
+    <div class="card"><h3>Ausgabe eintragen</h3><form data-form="expense" style="display:flex;flex-direction:column;gap:10px">
+      <div class="grid2"><label class="field">Betrag (€)<input type="number" id="e-amount" step="0.01" min="0" inputmode="decimal" placeholder="0,00" required></label><label class="field">Kategorie<select id="e-cat">${FINCATS.map(c => `<option>${c}</option>`).join('')}</select></label></div>
+      <div class="grid2"><label class="field">Wofür?<input type="text" id="e-note" placeholder="optional"></label><label class="field">Datum<input type="date" id="e-date" value="${todayKey()}"></label></div>
+      <button class="btn primary" type="submit">Eintragen</button></form></div>
+    ${byCat.length ? `<div class="card"><h3>Nach Kategorie</h3>${byCat.map(([c, v]) => `<div style="display:flex;flex-direction:column;gap:5px"><div class="row spread small"><b>${c}</b><span class="num muted">${eur(v)}</span></div><div class="meter"><b style="width:${spent ? v / spent * 100 : 0}%"></b></div></div>`).join('')}</div>` : ''}
+    <div class="card"><h3>Ausgaben</h3>${ex.length ? `<div class="list">${ex.map(e => `<div class="item"><div class="grow"><div class="title">${esc(e.note || e.cat)}</div><div class="sub">${esc(e.cat)} · ${esc(fmtDay(e.date))}</div></div><b class="num">${eur(num(e.amount))}</b><button class="icon-btn" data-act="delExp" data-id="${e.id}" aria-label="Löschen">${ICON_X}</button></div>`).join('')}</div>` : '<div class="small muted">In diesem Monat noch keine Ausgaben.</div>'}</div>`;
+}
+
+function vRueckblick() {
+  const t = todayKey(), mon = shiftKey(t, -((pkey(t).getDay() + 6) % 7)), week = [...Array(7)].map((_, i) => shiftKey(mon, i));
+  const tasks = D('tasks').items, hs = D('habits').items, fs = D('focus').sessions, je = D('journal').entries;
+  const doneIn = ks => tasks.filter(x => x.done && ks.includes(x.doneDate)).length;
+  const habIn = ks => hs.reduce((a, hb) => a + ks.filter(k => hb.days[k]).length, 0);
+  const focIn = ks => fs.filter(s => ks.includes(s.date)).reduce((a, s) => a + num(s.minutes), 0);
+  const moods = week.map(k => je[k] && je[k].mood).filter(Boolean), avg = moods.length ? moods.reduce((a, b) => a + num(b), 0) / moods.length : 0;
+  const last14 = [...Array(14)].map((_, i) => shiftKey(t, i - 13));
+  const L = level(), B = badges();
+  const wd = doneIn(week), wh = habIn(week), wf = focIn(week);
+  const summary = wd + wh + wf === 0 ? 'Diese Woche ist noch frisch. Jeder kleine Schritt zählt.'
+    : `Diese Woche hast du ${wd} ${wd === 1 ? 'Aufgabe' : 'Aufgaben'} erledigt, ${wh}-mal eine Gewohnheit gepflegt und ${wf} Minuten fokussiert gearbeitet.${avg ? ` Deine Stimmung lag im Schnitt bei ${fmt(avg, 1)} von 5.` : ''} Gut gemacht!`;
+  return `<div class="card"><div class="eyebrow">Diese Woche</div><p style="margin:0;font-size:16px;line-height:1.5;font-weight:600">${esc(summary)}</p>
+      <div class="stat3"><div class="stat"><div class="v">${wd}</div><div class="l">Aufgaben</div></div><div class="stat"><div class="v">${wh}</div><div class="l">Gewohnh.</div></div><div class="stat"><div class="v">${wf}</div><div class="l">Fokus-Min.</div></div></div></div>
+    <div class="card"><h3>Erledigte Aufgaben, letzte 14 Tage</h3>${barChart(last14.map(k => ({ k, v: doneIn([k]) })))}</div>
+    <div class="card"><h3>Stimmung, letzte 14 Tage</h3>${moodChart(last14.map(k => ({ k, v: je[k] && je[k].mood ? num(je[k].mood) : null })))}</div>
+    <div class="card"><div class="lvl"><div class="badge-n">${L.lvl}</div><div class="grow"><h3>Level ${L.lvl} · ${L.p} Punkte</h3><div class="meter gold" style="margin-top:6px"><b style="width:${L.rest}%"></b></div><div class="small muted" style="margin-top:6px">Aufgabe +10 · Gewohnheit +5 · Fokus-Einheit +15 · Tagebuch +5</div></div></div>
+      <div class="badges">${B.map(([n, d, on]) => `<div class="bdg ${on ? 'on' : ''}"><b>${esc(n)}</b><span>${esc(d)}</span></div>`).join('')}</div></div>`;
+}
+function barChart(data) {
+  const W = 340, H = 140, L = 24, R = 6, T = 10, Bm = 22, max = Math.max(4, ...data.map(d => d.v)), step = max <= 4 ? 1 : Math.ceil(max / 4);
+  const top = Math.ceil(max / step) * step, bw = (W - L - R) / data.length, y = v => T + (1 - v / top) * (H - T - Bm);
+  let g = '';
+  for (let v = 0; v <= top; v += step) g += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 5}" y="${y(v) + 3}" text-anchor="end">${v}</text>`;
+  const bars = data.map((d, i) => `<rect class="barr ${i === data.length - 1 ? 'now' : ''}" x="${L + i * bw + bw * .18}" y="${y(d.v)}" width="${bw * .64}" height="${Math.max(0, y(0) - y(d.v))}" rx="3"/>`).join('');
+  const lab = (i, a) => `<text x="${L + i * bw + bw / 2}" y="${H - 6}" text-anchor="${a}">${pkey(data[i].k).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Erledigte Aufgaben pro Tag">${g}${bars}${lab(0, 'start')}${lab(data.length - 1, 'end')}</svg>`;
+}
+function moodChart(data) {
+  const W = 340, H = 130, L = 24, R = 10, T = 10, Bm = 22, x = i => L + i * (W - L - R) / (data.length - 1), y = v => T + (1 - (v - 1) / 4) * (H - T - Bm);
+  let g = ''; for (let v = 1; v <= 5; v++) g += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 5}" y="${y(v) + 3}" text-anchor="end">${v}</text>`;
+  const pts = data.map((d, i) => d.v ? [x(i), y(d.v)] : null).filter(Boolean);
+  if (!pts.length) return `<div class="small muted">Trag im Tagebuch oder auf „Heute“ deine Stimmung ein, dann siehst du hier den Verlauf.</div>`;
+  const path = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const lab = (i, a) => `<text x="${x(i)}" y="${H - 6}" text-anchor="${a}">${pkey(data[i].k).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Stimmungsverlauf">${g}${pts.length > 1 ? `<path class="ln" d="${path}"/>` : ''}${pts.map(p => `<circle class="pt" cx="${p[0]}" cy="${p[1]}" r="4"/>`).join('')}${lab(0, 'start')}${lab(data.length - 1, 'end')}</svg>`;
+}
+
+/* ---------- Sheets ---------- */
+function openSheet(html) { const s = $('#sheet'); s.innerHTML = '<div class="grab"></div>' + html; s.hidden = false; $('#sheetBg').hidden = false; s.scrollTop = 0; }
+function closeSheet() { $('#sheet').hidden = true; $('#sheetBg').hidden = true; $('#sheet').innerHTML = ''; }
+const sel = (id, opts, v) => `<select id="${id}">${opts.map(([k, l]) => `<option value="${esc(k)}" ${k === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+const val = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+
+function taskSheet(id) {
+  const x = D('tasks').items.find(t => t.id === id); if (!x) return;
+  openSheet(`<h2>Aufgabe</h2>
+    <label class="field">Titel<input type="text" id="t-title" value="${esc(x.title)}"></label>
+    <div class="grid2"><label class="field">Fällig am<input type="date" id="t-due" value="${esc(x.due || '')}"></label><label class="field">Priorität${sel('t-prio', PRIOS.map(p => [p, p[0].toUpperCase() + p.slice(1)]), x.prio)}</label></div>
+    <div class="grid2"><label class="field">Bereich${sel('t-cat', [['', 'Kein Bereich'], ...CATS.map(c => [c, c])], x.cat || '')}</label><label class="field">Wiederholen${sel('t-recur', Object.entries(RECUR), x.recur || '')}</label></div>
+    <div class="field" style="font-size:13px;font-weight:700;color:var(--muted)">Unterschritte</div>
+    <div class="list" id="t-subs">${(x.subs || []).map(s => `<div class="item"><button class="check sq ${s.done ? 'on' : ''}" data-act="toggleSub" data-id="${x.id}" data-s="${s.id}" aria-pressed="${s.done}">${ICON_CHECK}</button><div class="grow">${esc(s.t)}</div><button class="icon-btn" data-act="delSub" data-id="${x.id}" data-s="${s.id}" aria-label="Unterschritt löschen">${ICON_X}</button></div>`).join('')}</div>
+    <form class="addrow" data-form="sub" data-id="${x.id}"><input type="text" id="t-sub" placeholder="Unterschritt hinzufügen" autocomplete="off"><button class="btn soft" type="submit">+</button></form>
+    <div class="sheet-actions"><button class="btn danger" data-act="delTask" data-id="${x.id}">Löschen</button><button class="btn primary" data-act="saveTask" data-id="${x.id}">Speichern</button></div>`);
+}
+function eventSheet(id, date) {
+  const e = id ? D('events').items.find(x => x.id === id) : { date: date || todayKey(), time: '', title: '', cat: '' };
+  if (!e) return;
+  openSheet(`<h2>${id ? 'Termin' : 'Neuer Termin'}</h2>
+    <label class="field">Was?<input type="text" id="v-title" value="${esc(e.title)}" placeholder="z. B. Gottesdienst"></label>
+    <div class="grid2"><label class="field">Datum<input type="date" id="v-date" value="${esc(e.date)}"></label><label class="field">Uhrzeit<input type="time" id="v-time" value="${esc(e.time || '')}"></label></div>
+    <label class="field">Bereich${sel('v-cat', [['', 'Kein Bereich'], ...CATS.map(c => [c, c])], e.cat || '')}</label>
+    <div class="sheet-actions">${id ? `<button class="btn danger" data-act="delEvent" data-id="${id}">Löschen</button>` : `<button class="btn ghost" data-act="closeSheet">Abbrechen</button>`}<button class="btn primary" data-act="saveEvent" data-id="${id || ''}">Speichern</button></div>`);
+}
+function goalSheet(id) {
+  const g = id ? D('goals').items.find(x => x.id === id) : { title: '', cat: '', current: 0, target: 100, unit: '%', notes: '', milestones: [] };
+  if (!g) return;
+  openSheet(`<h2>${id ? 'Ziel bearbeiten' : 'Neues Ziel'}</h2>
+    <label class="field">Thema oder Ziel<input type="text" id="g-title" value="${esc(g.title)}" placeholder="z. B. Gitarre lernen"></label>
+    <div class="grid2"><label class="field">Aktuell<input type="number" id="g-cur" step="any" value="${num(g.current)}"></label><label class="field">Ziel<input type="number" id="g-tgt" step="any" value="${num(g.target)}"></label></div>
+    <div class="grid2"><label class="field">Einheit<input type="text" id="g-unit" value="${esc(g.unit)}" placeholder="%, Seiten, km …"></label><label class="field">Bereich${sel('g-cat', [['', 'Kein Bereich'], ...CATS.map(c => [c, c])], g.cat || '')}</label></div>
+    <label class="field">Meilensteine (einer pro Zeile)<textarea id="g-ms">${esc((g.milestones || []).map(m => m.t).join('\n'))}</textarea></label>
+    <label class="field">Notizen<textarea id="g-notes">${esc(g.notes || '')}</textarea></label>
+    <div class="sheet-actions">${id ? `<button class="btn danger" data-act="delGoal" data-id="${id}">Löschen</button>` : `<button class="btn ghost" data-act="closeSheet">Abbrechen</button>`}<button class="btn primary" data-act="saveGoal" data-id="${id || ''}">Speichern</button></div>`);
+}
+function habitSheet(id) {
+  const hb = id ? D('habits').items.find(x => x.id === id) : { name: '' };
+  if (!hb) return;
+  openSheet(`<h2>${id ? 'Gewohnheit' : 'Neue Gewohnheit'}</h2>
+    <label class="field">Name<input type="text" id="h-name" value="${esc(hb.name)}" placeholder="z. B. 10 Minuten beten"></label>
+    <div class="sheet-actions">${id ? `<button class="btn danger" data-act="delHabit" data-id="${id}">Löschen</button>` : `<button class="btn ghost" data-act="closeSheet">Abbrechen</button>`}<button class="btn primary" data-act="saveHabit" data-id="${id || ''}">Speichern</button></div>`);
+}
+
+/* ---------- Aktionen ---------- */
+let armed = null;
+function confirmTap(btn, fn) {
+  if (armed === btn) { armed = null; fn(); return; }
+  if (armed) { armed.removeAttribute('data-armed'); armed.textContent = armed.dataset.orig; }
+  armed = btn; btn.dataset.orig = btn.textContent; btn.setAttribute('data-armed', ''); btn.textContent = 'Wirklich löschen?';
+  setTimeout(() => { if (armed === btn) { btn.removeAttribute('data-armed'); btn.textContent = btn.dataset.orig; armed = null; } }, 3000);
+}
+const mapItems = (k, id, fn) => edit(k, d => { const x = d.items.find(i => i.id === id); if (x) fn(x, d); });
+const A = {
+  tab(b) { ui.tab = b.dataset.tab; if (b.dataset.sec) ui.zielSec = b.dataset.sec; ui.more = ''; try { localStorage.setItem('tagwerk.tab', ui.tab); } catch {} render(); scrollTo(0, 0); },
+  openMore(b) { ui.tab = 'mehr'; ui.more = b.dataset.m; render(); scrollTo(0, 0); },
+  planSec(b) { ui.planSec = b.dataset.s; render(); }, zielSec(b) { ui.zielSec = b.dataset.s; render(); },
+  clearExamples, closeSheet,
+  account: accountSheet, exportData,
+  authMode(b) { ui.authEmail = val('a-email'); ui.authName = val('a-name'); ui.authMode = b.dataset.m; render(); },
+  async authReset() {
+    const email = val('a-email'), err = $('#a-err');
+    if (!email) { err.textContent = 'Gib oben deine E-Mail ein, dann schicken wir dir einen Link.'; return; }
+    try { await fbAuth.sendPasswordResetEmail(email); err.textContent = ''; toast('Link zum Zurücksetzen an ' + email + ' geschickt.'); }
+    catch (e) { err.textContent = AUTH_MSG[e.code] || 'Das hat nicht geklappt.'; }
+  },
+  async logout() {
+    flushTimers();
+    try { await fbAuth.signOut(); await fbDb.terminate(); await fbDb.clearPersistence(); } catch (e) { console.warn(e); }
+    location.reload();
+  },
+  theme() { setTheme(theme === '' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark') : theme === 'dark' ? 'light' : 'dark'); },
+  setTheme(b) { setTheme(b.dataset.t); },
+  favVerse(b) { const i = +b.dataset.i; edit('faith', f => { f.favs = f.favs.includes(i) ? f.favs.filter(x => x !== i) : [...f.favs, i]; }); },
+  nextVerse() { ui.verseShift = (ui.verseShift + 1) % VERSES.length; render(); }, resetVerse() { ui.verseShift = 0; render(); },
+  toggleTask(b) {
+    const t = todayKey();
+    mapItems('tasks', b.dataset.id, (x, d) => {
+      if (!x.done) {
+        x.done = true; x.doneDate = t; points(10);
+        if (x.recur) d.items.push({ ...clone(x), id: rid(), done: false, doneDate: '', due: nextDue(x.due, x.recur), subs: (x.subs || []).map(s => ({ ...s, done: false })) });
+        toast(x.recur ? 'Erledigt! +10 Punkte. Nächster Termin ist eingeplant.' : 'Erledigt! +10 Punkte');
+      } else { x.done = false; x.doneDate = ''; points(-10); }
+    });
+  },
+  taskSheet(b) { taskSheet(b.dataset.id); },
+  saveTask(b) {
+    const title = val('t-title'); if (!title) { toast('Gib der Aufgabe einen Titel.'); return; }
+    mapItems('tasks', b.dataset.id, x => { x.title = title; x.due = val('t-due'); x.prio = val('t-prio'); x.cat = val('t-cat'); x.recur = val('t-recur'); });
+    closeSheet();
+  },
+  delTask(b) { confirmTap(b, () => { edit('tasks', d => { d.items = d.items.filter(x => x.id !== b.dataset.id); }); closeSheet(); }); },
+  toggleSub(b) { mapItems('tasks', b.dataset.id, x => { const s = x.subs.find(s => s.id === b.dataset.s); if (s) s.done = !s.done; }); taskSheet(b.dataset.id); },
+  delSub(b) { mapItems('tasks', b.dataset.id, x => { x.subs = x.subs.filter(s => s.id !== b.dataset.s); }); taskSheet(b.dataset.id); },
+  taskFilter(b) { ui.taskFilter = b.dataset.f; render(); },
+  taskCat(b) { ui.taskCat = ui.taskCat === b.dataset.c ? '' : b.dataset.c; render(); },
+  clearDone(b) { confirmTap(b, () => edit('tasks', d => { d.items = d.items.filter(x => !x.done); })); },
+  calNav(b) { const [y, m] = ui.cal.split('-').map(Number), d = new Date(y, m - 1 + +b.dataset.n, 1); ui.cal = monthKey(dkey(d)); render(); },
+  calSel(b) { ui.calSel = b.dataset.d; if (monthKey(b.dataset.d) !== ui.cal) ui.cal = monthKey(b.dataset.d); render(); },
+  calToday() { ui.cal = monthKey(todayKey()); ui.calSel = todayKey(); render(); },
+  eventSheet(b) { eventSheet(b.dataset.id, b.dataset.date); },
+  saveEvent(b) {
+    const title = val('v-title'), date = val('v-date'); if (!title || !date) { toast('Bitte Titel und Datum angeben.'); return; }
+    const data = { title, date, time: val('v-time'), cat: val('v-cat') };
+    if (b.dataset.id) mapItems('events', b.dataset.id, x => Object.assign(x, data));
+    else edit('events', d => { d.items.push({ id: rid(), ...data }); });
+    closeSheet(); toast('Termin gespeichert');
+  },
+  delEvent(b) { confirmTap(b, () => { edit('events', d => { d.items = d.items.filter(x => x.id !== b.dataset.id); }); closeSheet(); }); },
+  goalSheet(b) { goalSheet(b.dataset.id); },
+  goalStep(b) {
+    mapItems('goals', b.dataset.id, g => {
+      const was = num(g.current) >= num(g.target); g.current = Math.max(0, num(g.current) + +b.dataset.n);
+      if (!was && num(g.current) >= num(g.target) && num(g.target) > 0) { points(50); toast('Ziel erreicht! +50 Punkte'); }
+    });
+  },
+  saveGoal(b) {
+    const title = val('g-title'); if (!title) { toast('Gib dem Ziel einen Namen.'); return; }
+    const old = b.dataset.id ? D('goals').items.find(x => x.id === b.dataset.id) : null;
+    const ms = val('g-ms').split('\n').map(s => s.trim()).filter(Boolean).map(t => { const o = old && (old.milestones || []).find(m => m.t === t); return { id: o ? o.id : rid(), t, done: o ? o.done : false }; });
+    const data = { title, current: num(val('g-cur')), target: num(val('g-tgt')), unit: val('g-unit'), cat: val('g-cat'), notes: val('g-notes'), milestones: ms };
+    if (old) mapItems('goals', old.id, x => Object.assign(x, data)); else edit('goals', d => { d.items.push({ id: rid(), ...data }); });
+    closeSheet();
+  },
+  delGoal(b) { confirmTap(b, () => { edit('goals', d => { d.items = d.items.filter(x => x.id !== b.dataset.id); }); closeSheet(); }); },
+  habitSheet(b) { habitSheet(b.dataset.id); },
+  saveHabit(b) {
+    const name = val('h-name'); if (!name) { toast('Gib der Gewohnheit einen Namen.'); return; }
+    if (b.dataset.id) mapItems('habits', b.dataset.id, x => { x.name = name; }); else edit('habits', d => { d.items.push({ id: rid(), name, days: {} }); });
+    closeSheet();
+  },
+  delHabit(b) { confirmTap(b, () => { edit('habits', d => { d.items = d.items.filter(x => x.id !== b.dataset.id); }); closeSheet(); }); },
+  toggleHabit(b) {
+    mapItems('habits', b.dataset.id, x => { const k = b.dataset.d; if (x.days[k]) { delete x.days[k]; points(-5); } else { x.days[k] = true; points(5); } });
+  },
+  mood(b) { jEdit(todayKey(), e => { e.mood = +b.dataset.v; }); render(); toast('Stimmung gespeichert'); },
+  jSet(b) { jEdit(ui.jDate, e => { e[b.dataset.f] = +b.dataset.v; }); render(); },
+  jNav(b) { const n = shiftKey(ui.jDate, +b.dataset.n); if (n <= todayKey()) { ui.jDate = n; render(); } },
+  jGo(b) { ui.jDate = b.dataset.d; render(); scrollTo(0, 0); },
+  answer(b) { edit('faith', f => { const p = f.prayers.find(x => x.id === b.dataset.id); if (p) { p.answered = true; p.answeredDate = todayKey(); } }); toast('Gott sei Dank! Als erhört markiert.'); },
+  delPrayer(b) { confirmTap(b, () => edit('faith', f => { f.prayers = f.prayers.filter(x => x.id !== b.dataset.id); })); },
+  timerToggle() {
+    if (T.running) { clearInterval(T.iv); T.running = false; T.left = Math.max(0, Math.round((T.end - Date.now()) / 1000)); }
+    else { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch {} T.running = true; T.end = Date.now() + T.left * 1000; T.iv = setInterval(tick, 1000); }
+    render();
+  },
+  timerReset() { clearInterval(T.iv); T.running = false; T.mode = 'work'; T.left = T.work * 60; render(); },
+  timerSkip() { T.mode = T.mode === 'work' ? 'brk' : 'work'; T.left = (T.mode === 'work' ? T.work : T.brk) * 60; render(); },
+  toggleShop(b) { edit('lists', l => { const x = l.shopping.find(i => i.id === b.dataset.id); if (x) x.done = !x.done; }); },
+  delShop(b) { edit('lists', l => { l.shopping = l.shopping.filter(i => i.id !== b.dataset.id); }); },
+  clearShop() { edit('lists', l => { l.shopping = l.shopping.filter(i => !i.done); }); },
+  delIdea(b) { confirmTap(b, () => edit('lists', l => { l.ideas = l.ideas.filter(i => i.id !== b.dataset.id); })); },
+  ideaToTask(b) {
+    const x = D('lists').ideas.find(i => i.id === b.dataset.id); if (!x) return;
+    edit('tasks', d => { d.items.push(newTask(x.t.split('\n')[0].slice(0, 120), '')); });
+    edit('lists', l => { l.ideas = l.ideas.filter(i => i.id !== x.id); });
+    toast('Als Aufgabe im Planer angelegt');
+  },
+  finNav(b) { const [y, m] = ui.finMonth.split('-').map(Number); ui.finMonth = monthKey(dkey(new Date(y, m - 1 + +b.dataset.n, 1))); render(); },
+  delExp(b) { confirmTap(b, () => edit('finance', f => { f.expenses = f.expenses.filter(e => e.id !== b.dataset.id); })); },
+};
+const newTask = (title, due) => ({ id: rid(), title, prio: 'mittel', due, cat: '', recur: '', done: false, subs: [], created: todayKey() });
+function jEdit(k, fn, later) {
+  const first = !D('journal').entries[k];
+  edit('journal', j => { const e = j.entries[k] || { mood: 0, energy: 0, grateful: ['', '', ''], good: '', next: '', text: '' }; fn(e); j.entries[k] = e; }, true);
+  if (first) points(5);
+}
+const FORMS = {
+  quickTask() { const t = val('q-task'); if (!t) return; edit('tasks', d => { d.items.push(newTask(t, todayKey())); }); setTimeout(() => $('#q-task')?.focus(), 0); },
+  newTask() { const t = val('n-task'); if (!t) return; const x = newTask(t, ''); edit('tasks', d => { d.items.push(x); }); taskSheet(x.id); },
+  sub(f) { const t = val('t-sub'); if (!t) return; mapItems('tasks', f.dataset.id, x => { x.subs = x.subs || []; x.subs.push({ id: rid(), t, done: false }); }); taskSheet(f.dataset.id); setTimeout(() => $('#t-sub')?.focus(), 0); },
+  prayer() { const t = val('n-prayer'); if (!t) return; edit('faith', f => { f.prayers.unshift({ id: rid(), text: t, date: todayKey(), answered: false }); }); },
+  shop() { const t = val('n-shop'); if (!t) return; edit('lists', l => { l.shopping.push({ id: rid(), t, done: false }); }); setTimeout(() => $('#n-shop')?.focus(), 0); },
+  idea() { const t = val('n-idea'); if (!t) return; edit('lists', l => { l.ideas.push({ id: rid(), t, date: todayKey() }); }); toast('Notiz gespeichert'); },
+  expense() {
+    const a = num(val('e-amount')); if (a <= 0) { toast('Gib einen Betrag ein.'); return; }
+    const date = val('e-date') || todayKey();
+    edit('finance', f => { f.expenses.push({ id: rid(), date, amount: a, cat: val('e-cat'), note: val('e-note') }); });
+    ui.finMonth = monthKey(date); toast('Ausgabe eingetragen');
+  },
+};
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  const f = A[b.dataset.act]; if (f) { e.preventDefault(); f(b); }
+});
+document.addEventListener('submit', e => { const f = e.target.closest('[data-form]'); if (!f) return; e.preventDefault(); FORMS[f.dataset.form]?.(f); });
+document.addEventListener('change', e => {
+  const el = e.target, k = el.dataset.chg; if (!k) return;
+  if (k === 'ms') mapItems('goals', el.dataset.id, g => { const s = g.milestones.find(m => m.id === el.dataset.s); if (s) s.done = el.checked; });
+  if (k === 'budget') edit('finance', f => { f.budget = Math.max(0, num(el.value)); });
+  if (k === 'focusTask') T.taskId = el.value;
+  if (k === 'focusLen') { T[el.dataset.k] = Math.min(120, Math.max(1, Math.round(num(el.value)) || 1)); if (!T.running) T.left = (T.mode === 'work' ? T.work : T.brk) * 60; render(); }
+});
+document.addEventListener('input', e => {
+  const el = e.target, f = el.dataset.in; if (!f) return;
+  jEdit(ui.jDate, x => { if (f === 'grateful') { x.grateful = x.grateful || ['', '', '']; x.grateful[+el.dataset.i] = el.value; } else x[f] = el.value; });
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
+
+/* ---------- Theme ---------- */
+let theme = '';
+try { theme = localStorage.getItem('tagwerk.theme') || ''; } catch {}
+function setTheme(t) {
+  theme = t; if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  try { localStorage.setItem('tagwerk.theme', t); } catch {}
+  themeIcon(); if (ready) render();
+}
+function themeIcon() {
+  const dark = theme === 'dark' || (!theme && matchMedia('(prefers-color-scheme: dark)').matches);
+  $('#themeBtn').innerHTML = dark ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg>'
+    : '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
+}
+setTheme(theme);
+
+/* ---------- Render ---------- */
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600); }
+function render() {
+  if (!ready) return;
+  document.body.classList.toggle('signed-out', authState === 'out');
+  if (authState === 'out') { $('#topDate').textContent = ''; $('#topTitle').textContent = 'Tagwerk'; view.innerHTML = vAuth(); return; }
+  const now = new Date();
+  $('#topDate').textContent = now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('#topTitle').textContent = ui.tab === 'mehr' && ui.more ? MORE[ui.more] : TITLES[ui.tab];
+  document.querySelectorAll('.tabs [data-tab]').forEach(b => b.toggleAttribute('aria-current', false) || (b.dataset.tab === ui.tab && b.setAttribute('aria-current', 'page')));
+  const lc = lateCount(), lb = $('#lateBadge'); lb.hidden = !lc; lb.textContent = lc;
+  view.innerHTML = ({ heute: vHeute, planer: vPlaner, ziele: vZiele, glaube: vGlaube, mehr: vMehr })[ui.tab]();
+}
+let lastDay = todayKey();
+setInterval(() => { if (todayKey() !== lastDay) { lastDay = todayKey(); ui.verseShift = 0; requestRender(); } }, 60000);
+init();
+})();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>
